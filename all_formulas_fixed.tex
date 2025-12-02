@@ -1,0 +1,74 @@
+\documentclass{article}
+\usepackage{amsmath, amssymb}
+
+\begin{document}
+
+\section*{Pushing--Medium Model: Core Formula Sheet}
+
+\begin{enumerate}
+    \item \textbf{Static refractive index field from point masses}
+    
+    \[
+    n(\mathbf{r}) = 1 + \sum_i \frac{\mu_i}{\lvert \mathbf{r} - \mathbf{r}_i \rvert},
+    \quad \mu_i = \frac{2 G M_i}{c^2} \ \text{(or chosen scaling)}
+    \]
+
+    \item \textbf{Optional flow field (frame--drag analogue)}
+    
+    \[
+    \mathbf{u}_g(\mathbf{r}) = \sum_i \boldsymbol{\Omega}_i \times (\mathbf{r} - \mathbf{r}_i)
+    \]
+
+    \item \textbf{Time--dependent perturbation (wave injection)}
+    
+    \[
+    \delta n_{\mathrm{wave}}(\mathbf{r}, t) = A \cos\!\big( \mathbf{k} \cdot \mathbf{r} - \omega t \big)
+    \]
+
+    \item \textbf{Total refractive index field}
+    
+    \[
+    n_{\mathrm{total}}(\mathbf{r}, t) = n(\mathbf{r}) + \delta n_{\mathrm{wave}}(\mathbf{r}, t)
+    \]
+
+    \item \textbf{Ray equation of motion (Fermat's principle)}
+    
+    \[
+    \frac{d\hat{\mathbf{k}}}{ds} = \nabla_{\!\perp} \ln n_{\mathrm{total}}(\mathbf{r}, t)
+    \]
+
+    where $\nabla_{\!\perp}$ is the gradient perpendicular to the ray direction.
+
+    \item \textbf{Ray advection by flow field}
+    
+    \[
+    \frac{d\mathbf{r}}{dt} = \frac{c\,\hat{\mathbf{k}}}{n_{\mathrm{total}}} + \mathbf{u}_g(\mathbf{r}, t)
+    \]
+
+    \item \textbf{Massive particle acceleration (optical--mechanical analogy)}
+    
+    \[
+    \mathbf{a}_{\mathrm{med}}(\mathbf{r}, t) = -\,c^2 \,\nabla \ln n_{\mathrm{total}}(\mathbf{r}, t)
+    \]
+
+    \item \textbf{Newtonian gravity term for matter}
+    
+    \[
+    \mathbf{a}_{\mathrm{grav}}(\mathbf{r}) = - \sum_i \frac{G M_i \, (\mathbf{r} - \mathbf{r}_i)}{\lvert \mathbf{r} - \mathbf{r}_i \rvert^3}
+    \]
+
+    \item \textbf{Combined matter equation of motion}
+    
+    \[
+    \frac{d^2 \mathbf{r}}{dt^2} = \mathbf{a}_{\mathrm{grav}} + \mathbf{a}_{\mathrm{med}} + \text{(optional flow coupling)}
+    \]
+
+    \item \textbf{Index gradient from continuous mass density}
+    
+    \[
+    n(\mathbf{r}) = 1 + \frac{2G}{c^2} \int \frac{\rho(\mathbf{r}')}{\lvert \mathbf{r} - \mathbf{r}' \rvert} \, d^3 r'
+    \]
+
+\end{enumerate}
+
+\end{document}
