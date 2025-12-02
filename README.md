@@ -1,10 +1,10 @@
 # PMFlow - Enhanced Probabilistic Masked Flow
 
-A BNN-enhanced neural embedding system with contrastive learning and semantic retrieval capabilities.
+A BNN (BioNN / Biological Neural Network) enhanced neural embedding system with contrastive learning and semantic retrieval capabilities.
 
 ## Features
 
-- **BNN-Enhanced Embeddings**: Bayesian Neural Network layers for uncertainty-aware representations
+- **BNN-Enhanced Embeddings**: Biological Neural Network layers for uncertainty-aware representations
 - **Contrastive Learning**: Optional contrastive training for semantic similarity
 - **Flexible Architecture**: Supports various dimensionalities and latent spaces
 - **Production Ready**: Simple API, tested in real applications
@@ -79,7 +79,7 @@ similarity = torch.cosine_similarity(query_emb, doc_emb, dim=0)
 
 PMFlow combines:
 - **Probabilistic Masking**: Learned attention over input tokens
-- **BNN Layers**: Bayesian uncertainty quantification
+- **BNN Layers**: 
 - **Flow-based Aggregation**: Smooth, differentiable token pooling
 - **Contrastive Objectives**: Optional semantic similarity training
 
