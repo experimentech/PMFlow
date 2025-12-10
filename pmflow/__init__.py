@@ -1,7 +1,7 @@
 """
 PMFlow - Probabilistic Masked Flow for Neural Embeddings
 
-A BNN-enhanced embedding system with contrastive learning and semantic retrieval.
+A BioNN (Biological Neural Network)-enhanced embedding system with contrastive learning and semantic retrieval.
 """
 
 __version__ = "0.3.0"

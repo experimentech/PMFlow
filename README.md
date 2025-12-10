@@ -1,10 +1,10 @@
 # PMFlow - Enhanced Probabilistic Masked Flow
 
-A BNN (BioNN / Biological Neural Network) enhanced neural embedding system with contrastive learning and semantic retrieval capabilities.
+A BioNN (Biological Neural Network) enhanced neural embedding system with contrastive learning and semantic retrieval capabilities.
 
 ## Features
 
-- **BNN-Enhanced Embeddings**: Biological Neural Network layers for uncertainty-aware representations
+- **BioNN-Enhanced Embeddings**: Biological Neural Network layers for uncertainty-aware representations
 - **Contrastive Learning**: Optional contrastive training for semantic similarity
 - **Flexible Architecture**: Supports various dimensionalities and latent spaces
 - **Production Ready**: Simple API, tested in real applications
@@ -30,7 +30,7 @@ from pmflow import PMFlowEmbeddingEncoder
 # Create encoder
 encoder = PMFlowEmbeddingEncoder(
     dimension=64,      # Embedding dimension
-    latent_dim=32,     # BNN latent dimension
+    latent_dim=32,     # BioNN latent dimension
     vocab_size=10000   # Vocabulary size (optional)
 )
 
@@ -79,7 +79,7 @@ similarity = torch.cosine_similarity(query_emb, doc_emb, dim=0)
 
 PMFlow combines:
 - **Probabilistic Masking**: Learned attention over input tokens
-- **BNN Layers**: 
+- **BioNN Layers**: 
 - **Flow-based Aggregation**: Smooth, differentiable token pooling
 - **Contrastive Objectives**: Optional semantic similarity training
 
@@ -91,7 +91,7 @@ Main encoder class.
 
 **Parameters:**
 - `dimension` (int): Output embedding dimension
-- `latent_dim` (int): BNN latent space dimension
+- `latent_dim` (int): BioNN latent space dimension
 - `vocab_size` (int, optional): Vocabulary size for embedding layer
 - `use_contrastive` (bool): Enable contrastive learning
 - `temperature` (float): Temperature for contrastive loss
@@ -145,6 +145,6 @@ Contributions welcome! See CONTRIBUTING.md for guidelines.
 
 ### v0.3.0 (2024-11-25)
 - Production release
-- BNN-enhanced embeddings
+- BioNN-enhanced embeddings
 - Contrastive learning support
 - Tested in Lilith conversational AI

@@ -1,11 +1,11 @@
 """
-PMFlow BNN v0.2.0 Evaluation Module
+PMFlow BioNN v0.2.0 Evaluation Module
 
-This module provides meaningful evaluation metrics for PMFlow BNN that focus on
+This module provides meaningful evaluation metrics for PMFlow BioNN that focus on
 the actual capabilities rather than misleading comparisons with standard MLPs.
 
 Key insights from notebook analysis:
-- PMFlow BNN is not about "faster than MLP" - it's about new capabilities
+- PMFlow BioNN is not about "faster than MLP" - it's about new capabilities
 - Focus on embarrassingly parallel scaling, gravitational dynamics, and biological plasticity
 - Provide meaningful benchmarks for physics-based neural computation
 """
@@ -21,7 +21,7 @@ from .factory import get_model_v2
 
 class PMFlowEvaluator:
     """
-    Comprehensive evaluator for PMFlow BNN capabilities.
+    Comprehensive evaluator for PMFlow BioNN capabilities.
     
     Focuses on meaningful metrics:
     - Embarrassingly parallel scaling efficiency
@@ -40,7 +40,7 @@ class PMFlowEvaluator:
         """
         Test the embarrassingly parallel scaling characteristics.
         
-        This is the key metric for PMFlow BNN - how well it scales with batch size.
+        This is the key metric for PMFlow BioNN - how well it scales with batch size.
         """
         print("🚀 Testing Embarrassingly Parallel Scaling...")
         
@@ -368,12 +368,12 @@ class PMFlowEvaluator:
     
     def visualize_results(self, save_path: Optional[str] = None):
         """
-        Create meaningful visualizations of PMFlow BNN capabilities.
+        Create meaningful visualizations of PMFlow BioNN capabilities.
         
         Focuses on the real strengths: scaling, dynamics, plasticity.
         """
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 12))
-        fig.suptitle('PMFlow BNN v0.2.0: Core Capabilities Analysis', fontsize=16, fontweight='bold')
+        fig.suptitle('PMFlow BioNN v0.2.0: Core Capabilities Analysis', fontsize=16, fontweight='bold')
         
         # Plot 1: Embarrassingly Parallel Scaling
         if 'embarrassingly_parallel' in self.results:
@@ -421,7 +421,7 @@ class PMFlowEvaluator:
             
             ax4.bar(capabilities, scores, alpha=0.7, color='green', edgecolor='darkgreen')
             ax4.set_ylabel('Capability Score')
-            ax4.set_title('🎯 PMFlow BNN Capability Profile')
+            ax4.set_title('🎯 PMFlow BioNN Capability Profile')
             ax4.set_ylim(0, 1.1)
             plt.setp(ax4.xaxis.get_majorticklabels(), rotation=45, ha='right')
         
@@ -437,7 +437,7 @@ class PMFlowEvaluator:
         Generate a comprehensive evaluation report focusing on meaningful metrics.
         """
         report = """
-PMFlow BNN v0.2.0 Evaluation Report
+PMFlow BioNN v0.2.0 Evaluation Report
 =====================================
 
 🎯 MEANINGFUL PERFORMANCE METRICS (Not "faster than MLP"):
@@ -476,7 +476,7 @@ PMFlow BNN v0.2.0 Evaluation Report
         
         report += """
 ✅ SUMMARY:
-   PMFlow BNN provides capabilities that don't exist in standard neural networks:
+   PMFlow BioNN provides capabilities that don't exist in standard neural networks:
    - Physics-based computation using gravitational field dynamics
    - Embarrassingly parallel temporal processing  
    - Biological plasticity and adaptation mechanisms
@@ -496,7 +496,7 @@ def create_meaningful_benchmark_suite():
     """
     
     def test_pmflow_capabilities(model_config: Dict[str, Any] = None):
-        """Test suite for PMFlow BNN capabilities."""
+        """Test suite for PMFlow BioNN capabilities."""
         
         if model_config is None:
             model_config = {
@@ -541,7 +541,7 @@ def create_meaningful_benchmark_suite():
 
 if __name__ == "__main__":
     # Demo the meaningful evaluation
-    print("🎯 PMFlow BNN Meaningful Evaluation Demo")
+    print("🎯 PMFlow BioNN Meaningful Evaluation Demo")
     print("="*50)
     
     test_function = create_meaningful_benchmark_suite()

@@ -23,7 +23,7 @@ This package currently contains the **low-level PMFlow research components**, NO
 - **pmflow/core/contrastive.py**: Contrastive learning
   - `ContrastivePMField`
 
-- **pmflow/bnn/bnn.py**: BNN temporal layers
+- **pmflow/bnn/bnn.py**: BioNN temporal layers
   - `TemporalPipelineBNN`
   - `MultiGPUPMBNN`
   - `PMBNNAlwaysPlasticV2`
@@ -37,7 +37,7 @@ experiments/retrieval_sanity/pipeline/embedding.py
 
 This is the actual working encoder with:
 - Simple, clean API
-- BNN integration
+- BioNN integration
 - Contrastive learning support
 - Production-tested
 

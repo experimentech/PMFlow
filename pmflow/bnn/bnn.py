@@ -138,7 +138,7 @@ class TemporalPipelineBNN(nn.Module):
 
 class MultiGPUPMBNN(nn.Module):
     """
-    Multi-GPU distributed PMFlow BNN leveraging embarrassingly parallel nature.
+    Multi-GPU distributed PMFlow BioNN leveraging embarrassingly parallel nature.
     
     Since PMFlow centers act independently like gravitational point masses,
     they can be distributed across multiple GPUs with minimal communication.
@@ -242,7 +242,7 @@ class MultiGPUPMBNN(nn.Module):
 
 class PMBNNAlwaysPlasticV2(nn.Module):
     """
-    Enhanced always-plastic PMFlow BNN with vectorized plasticity.
+    Enhanced always-plastic PMFlow BioNN with vectorized plasticity.
     
     Implements continuous adaptation using vectorized local plasticity
     rules based on gravitational center dynamics.
