@@ -42,7 +42,9 @@ class PMFlowEmbeddingEncoder:
 
     The PMFlow field injects a touch of learned-like structure without requiring
     any training loop. We initialise it deterministically so embeddings are
-    stable across runs.
+    stable across runs. Optional ``target_pm_dim`` trims/pads PM outputs to a
+    deterministic width so downstream callers can preallocate fixed-size
+    vectors even when multi-scale fields change the latent width.
     """
 
     def __init__(
@@ -54,6 +56,7 @@ class PMFlowEmbeddingEncoder:
         combine_mode: str = "concat",
         device: Optional[torch.device] = None,
         base_encoder: Optional[HashedEmbeddingEncoder] = None,
+        target_pm_dim: Optional[int] = None,
     ) -> None:
         if combine_mode not in {"concat", "pm-only"}:
             raise ValueError("combine_mode must be 'concat' or 'pm-only'.")
@@ -62,6 +65,7 @@ class PMFlowEmbeddingEncoder:
         self.base_encoder = base_encoder or HashedEmbeddingEncoder(dimension=dimension)
         self.dimension = self.base_encoder.dimension
         self.latent_dim = latent_dim
+        self.target_pm_dim = target_pm_dim
         self._projection = self._build_projection_matrix(self.dimension, latent_dim, seed).to(self.device)
         self.pm_field = self._init_pm_field(latent_dim, seed)
         self.pm_field.to(self.device)
@@ -217,10 +221,25 @@ class PMFlowEmbeddingEncoder:
                 # Standard PMField returns single tensor
                 raw_refined: torch.Tensor = pm_output
             
-            refined = F.normalize(raw_refined, p=2, dim=1)
+            refined = self._align_dim(raw_refined)
+            refined = F.normalize(refined, p=2, dim=1)
             if self.combine_mode == "concat":
                 hashed = F.normalize(base, p=2, dim=1)
                 combined = torch.cat([hashed, refined], dim=1)
             else:
                 combined = refined
             return combined.cpu(), latent.detach().cpu(), raw_refined.detach().cpu()
+
+    def _align_dim(self, tensor: torch.Tensor) -> torch.Tensor:
+        """Trim or pad PMFlow output to a deterministic width when requested."""
+
+        if self.target_pm_dim is None:
+            return tensor
+
+        current = tensor.shape[-1]
+        if current == self.target_pm_dim:
+            return tensor
+        if current > self.target_pm_dim:
+            return tensor[..., : self.target_pm_dim]
+        pad = self.target_pm_dim - current
+        return F.pad(tensor, (0, pad))
