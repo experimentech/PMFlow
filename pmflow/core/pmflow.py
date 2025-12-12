@@ -237,6 +237,94 @@ def vectorized_pm_plasticity(pmfield: ParallelPMField, z_batch: torch.Tensor,
     pmfield.centers.add_(c_lr * (target - C))
 
 
+@torch.no_grad()
+def contrastive_plasticity(
+    pmfield: ParallelPMField,
+    similar_pairs: List[Tuple[torch.Tensor, torch.Tensor]],
+    dissimilar_pairs: List[Tuple[torch.Tensor, torch.Tensor]],
+    mu_lr: float = 1e-3,
+    c_lr: float = 1e-3,
+    margin: float = 1.0,
+):
+    """Contrastive plasticity update for improved concept separation.
+
+    Pulls similar embeddings together and pushes dissimilar ones apart by
+    nudging PMFlow centers and gravitational strengths. Mirrors the legacy
+    helper from pmflow_bnn_enhanced for backwards compatibility.
+    """
+
+    s2 = 0.8 ** 2
+    C = pmfield.centers
+    N, _ = C.shape
+
+    # Pull together similar pairs
+    if similar_pairs:
+        similar_targets = []
+        similar_weights = []
+        for emb1, emb2 in similar_pairs:
+            target = (emb1 + emb2) / 2.0
+            similar_targets.append(target.squeeze())
+
+            dist2 = torch.sum((C - target) ** 2, dim=1)
+            weight = torch.exp(-dist2 / (2 * s2))
+            similar_weights.append(weight)
+
+        if similar_targets:
+            similar_targets = torch.stack(similar_targets)
+            similar_weights = torch.stack(similar_weights)
+
+            W_sum = torch.sum(similar_weights, dim=0, keepdim=True).T + 1e-6
+            weighted_targets = torch.sum(
+                similar_weights.T.unsqueeze(2) * similar_targets.unsqueeze(0),
+                dim=1,
+            )
+            target_pull = weighted_targets / W_sum
+
+            C.add_(c_lr * 0.5 * (target_pull - C))
+
+            mu_drive = torch.mean(similar_weights, dim=0)
+            pmfield.mus.add_(mu_lr * mu_drive)
+
+    # Push apart dissimilar pairs
+    if dissimilar_pairs:
+        for emb1, emb2 in dissimilar_pairs:
+            current_dist = torch.norm(emb1 - emb2)
+            if current_dist < margin:
+                push_vector = emb1 - emb2
+                push_vector = push_vector / (torch.norm(push_vector) + 1e-6)
+
+                dist1_to_centers = torch.sum((C - emb1) ** 2, dim=1)
+                dist2_to_centers = torch.sum((C - emb2) ** 2, dim=1)
+
+                weight1 = torch.exp(-dist1_to_centers / (2 * s2))
+                weight2 = torch.exp(-dist2_to_centers / (2 * s2))
+
+                push_strength = (margin - current_dist.item()) / margin
+                C.add_(
+                    c_lr
+                    * 0.1
+                    * push_strength
+                    * (weight1.unsqueeze(1) * push_vector - weight2.unsqueeze(1) * push_vector)
+                )
+
+
+def batch_plasticity_update(
+    pmfield: ParallelPMField,
+    examples: List[torch.Tensor],
+    mu_lr: float = 5e-4,
+    c_lr: float = 5e-4,
+    batch_size: int = 32,
+):
+    """Mini-batch wrapper around ``vectorized_pm_plasticity`` for efficiency."""
+
+    n_examples = len(examples)
+    for i in range(0, n_examples, batch_size):
+        batch = examples[i : i + batch_size]
+        z_batch = torch.stack([ex.squeeze() for ex in batch])
+        h_batch = pmfield(z_batch)
+        vectorized_pm_plasticity(pmfield, z_batch, h_batch, mu_lr=mu_lr, c_lr=c_lr)
+
+
 # ============================================================================
 # Enhanced Features for Lilith Neuro-Symbolic AI (v0.3.0)
 # ============================================================================

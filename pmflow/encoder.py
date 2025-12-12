@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import importlib
 from pathlib import Path
 from typing import Iterable, Optional
 
@@ -80,60 +79,63 @@ class PMFlowEmbeddingEncoder:
 
     @staticmethod
     def _init_pm_field(latent_dim: int, seed: int):
-        try:
-            module = importlib.import_module("pmflow_bnn_enhanced.pmflow")
-        except ModuleNotFoundError:
-            # Fallback to original pmflow_bnn if enhanced version not available
-            try:
-                module = importlib.import_module("pmflow_bnn.pmflow")
-            except ModuleNotFoundError as exc:  # pragma: no cover - handled by caller fallback
-                raise RuntimeError("pmflow_bnn is required for PMFlow embeddings") from exc
+        """Create a deterministic PMFlow field using bundled implementations."""
+        from pmflow.core.pmflow import MultiScalePMField, ParallelPMField
 
-        # Try to use MultiScalePMField for hierarchical concept learning
-        PMFieldCls = getattr(module, "MultiScalePMField", None)
-        if PMFieldCls is not None:
-            # Use multi-scale field for better hierarchical concept representation
-            field = PMFieldCls(
-                d_latent=latent_dim, 
-                n_centers_fine=128,  # Fine-grained specific concepts
-                n_centers_coarse=32,  # Coarse-grained categories
-                steps_fine=5, 
+        # Prefer multi-scale for hierarchical representations; fallback to parallel field.
+        try:
+            field = MultiScalePMField(
+                d_latent=latent_dim,
+                n_centers_fine=128,
+                n_centers_coarse=32,
+                steps_fine=5,
                 steps_coarse=3,
-                dt=0.15, 
-                beta=1.2, 
-                clamp=3.0
+                dt=0.15,
+                beta=1.2,
+                clamp=3.0,
             )
-            # MultiScalePMField manages its own internal fields - no manual init needed
             generator = torch.Generator().manual_seed(seed)
             with torch.no_grad():
-                # Initialize fine field
-                centres_fine = torch.randn(field.fine_field.centers.shape, generator=generator, device=field.fine_field.centers.device) * 0.5
-                mus_fine = torch.full(field.fine_field.mus.shape, 0.35, device=field.fine_field.mus.device)
+                centres_fine = torch.randn(
+                    field.fine_field.centers.shape,
+                    generator=generator,
+                    device=field.fine_field.centers.device,
+                ) * 0.5
+                mus_fine = torch.full(
+                    field.fine_field.mus.shape,
+                    0.35,
+                    device=field.fine_field.mus.device,
+                )
                 field.fine_field.centers.copy_(centres_fine)
                 field.fine_field.mus.copy_(mus_fine)
-                
-                # Initialize coarse field
-                centres_coarse = torch.randn(field.coarse_field.centers.shape, generator=generator, device=field.coarse_field.centers.device) * 0.5
-                mus_coarse = torch.full(field.coarse_field.mus.shape, 0.35, device=field.coarse_field.mus.device)
+
+                centres_coarse = torch.randn(
+                    field.coarse_field.centers.shape,
+                    generator=generator,
+                    device=field.coarse_field.centers.device,
+                ) * 0.5
+                mus_coarse = torch.full(
+                    field.coarse_field.mus.shape,
+                    0.35,
+                    device=field.coarse_field.mus.device,
+                )
                 field.coarse_field.centers.copy_(centres_coarse)
                 field.coarse_field.mus.copy_(mus_coarse)
             return field
-        
-        # Fallback to standard PMField if MultiScale not available
-        PMFieldCls = getattr(module, "PMField", None)
-        if PMFieldCls is None:
-            PMFieldCls = getattr(module, "ParallelPMField", None)
-        if PMFieldCls is None:
-            raise RuntimeError("pmflow module missing PMField/ParallelPMField implementation")
-
-        field = PMFieldCls(d_latent=latent_dim, steps=5, dt=0.08, beta=0.9, clamp=2.5)
-        generator = torch.Generator().manual_seed(seed)
-        with torch.no_grad():
-            centres = torch.randn(field.centers.shape, generator=generator, device=field.centers.device) * 0.5
-            mus = torch.full(field.mus.shape, 0.35, device=field.mus.device)
-            field.centers.copy_(centres)
-            field.mus.copy_(mus)
-        return field
+        except Exception:
+            # Fall back to a single-scale field if multi-scale construction fails.
+            field = ParallelPMField(d_latent=latent_dim, steps=5, dt=0.08, beta=0.9, clamp=2.5)
+            generator = torch.Generator().manual_seed(seed)
+            with torch.no_grad():
+                centres = torch.randn(
+                    field.centers.shape,
+                    generator=generator,
+                    device=field.centers.device,
+                ) * 0.5
+                mus = torch.full(field.mus.shape, 0.35, device=field.mus.device)
+                field.centers.copy_(centres)
+                field.mus.copy_(mus)
+            return field
 
     def encode(self, tokens: Iterable[str]) -> torch.Tensor:
         combined, _, _ = self._encode_internal(tokens)

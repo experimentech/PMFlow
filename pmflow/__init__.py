@@ -1,31 +1,68 @@
 """
 PMFlow - Probabilistic Masked Flow for Neural Embeddings
 
-A BioNN (Biological Neural Network)-enhanced embedding system with contrastive learning and semantic retrieval.
+Core library plus retrieval and contrastive extensions.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
-# Main production encoder
+# Primary encoder
 from pmflow.encoder import PMFlowEmbeddingEncoder
 
-# Legacy-compatible surface for downstream projects
-from pmflow.pmflow import PMFlow, PMField, ParallelPMField, MultiScalePMField, vectorized_pm_plasticity
+# Core fields
+from pmflow.core.pmflow import (
+    ParallelPMField,
+    MultiScalePMField,
+    vectorized_pm_plasticity,
+    contrastive_plasticity,
+    batch_plasticity_update,
+    hybrid_similarity,
+    VectorizedLateralEI,
+)
 
-# For advanced users - low-level components
-from pmflow.core.pmflow import VectorizedLateralEI
+# Retrieval extensions
+from pmflow.core.retrieval import (
+    QueryExpansionPMField,
+    SemanticNeighborhoodPMField,
+    HierarchicalRetrievalPMField,
+    AttentionWeightedRetrieval,
+    CompositionalRetrievalPMField,
+)
+
+# Contrastive extensions
+from pmflow.core.contrastive import (
+    ContrastivePMField,
+    contrastive_learning_step,
+    train_contrastive_pmfield,
+    create_contrastive_encoder,
+)
+
+# Experimental BioNN components
 from pmflow.bnn.bnn import TemporalPipelineBNN
 
 __all__ = [
-    "PMFlowEmbeddingEncoder",  # Primary API
-    # Legacy/compat
-    "PMFlow",
-    "PMField",
+    # Primary API
+    "PMFlowEmbeddingEncoder",
+    # Core fields
+    "ParallelPMField",
     "MultiScalePMField",
     "vectorized_pm_plasticity",
-    # Advanced/research
-    "ParallelPMField",
+    "contrastive_plasticity",
+    "batch_plasticity_update",
+    "hybrid_similarity",
     "VectorizedLateralEI",
+    # Retrieval
+    "QueryExpansionPMField",
+    "SemanticNeighborhoodPMField",
+    "HierarchicalRetrievalPMField",
+    "AttentionWeightedRetrieval",
+    "CompositionalRetrievalPMField",
+    # Contrastive
+    "ContrastivePMField",
+    "contrastive_learning_step",
+    "train_contrastive_pmfield",
+    "create_contrastive_encoder",
+    # Experimental
     "TemporalPipelineBNN",
 ]
 
