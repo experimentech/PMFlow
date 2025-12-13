@@ -1,4 +1,4 @@
-# PMFlow - Enhanced Probabilistic Masked Flow
+# PMFlow - Enhanced Pushing Medium gravitational Flow based neural network
 
 A BioNN (Biological Neural Network) enhanced neural embedding system with contrastive learning and semantic retrieval capabilities.
 
