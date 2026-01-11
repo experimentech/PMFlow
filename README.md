@@ -17,7 +17,7 @@ pip install pmflow
 
 Or from source:
 ```bash
-git clone https://github.com/yourusername/pmflow.git
+git clone https://github.com/experimentech/PMFlow.git
 cd pmflow
 pip install -e .
 ```
@@ -143,7 +143,7 @@ Contributions welcome! See CONTRIBUTING.md for guidelines.
 
 ## Changelog
 
-### v0.3.0 (2024-11-25)
+### v0.3.0 (2025-11-25)
 - Production release
 - BioNN-enhanced embeddings
 - Contrastive learning support
