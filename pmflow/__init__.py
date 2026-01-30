@@ -4,7 +4,7 @@ PMFlow - Probabilistic Masked Flow for Neural Embeddings
 Core library plus retrieval and contrastive extensions.
 """
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 # Primary encoder
 from pmflow.encoder import PMFlowEmbeddingEncoder

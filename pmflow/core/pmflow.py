@@ -17,12 +17,18 @@ class ParallelPMField(nn.Module):
     """
     
     def __init__(self, d_latent=8, n_centers=64, steps=4, dt=0.15, beta=1.2, 
-                 clamp=3.0, temporal_parallel=True, chunk_size=16):
+                 clamp=3.0, temporal_parallel=True, chunk_size=16, enable_flow=False):
         super().__init__()
         # Better initialization for gravitational centers
         self.centers = nn.Parameter(torch.randn(n_centers, d_latent) * 0.8)  # Slightly wider spread
         # Initialize mus with more variation for better specialization
         self.mus = nn.Parameter(torch.ones(n_centers) * 0.5 + torch.randn(n_centers) * 0.1)
+        
+        # Initialize omegas for frame-dragging flow (Equation 2)
+        # We initialize close to zero so flow is learned/activated intentionally
+        self.omegas = nn.Parameter(torch.randn(n_centers) * 0.01)
+        self.enable_flow = enable_flow
+        
         self.steps = steps
         self.dt = dt
         self.beta = beta
@@ -61,23 +67,94 @@ class ParallelPMField(nn.Module):
         
         return grad_ln_n
     
+    def vectorized_flow_field(self, z: torch.Tensor) -> torch.Tensor:
+        """
+        Vectorized computation of frame-dragging flow u_g(r).
+        
+        Implements: u_g(r) = Σ Ωᵢ × (r - rᵢ)
+        
+        For high-dimensional efficiency (O(D)), we approximate the cross product
+        using a fixed skew-symmetric permutation (swapping dimension pairs).
+        This creates a rotational 'swirl' orthogonal to the radial vector without
+        needing full O(D²) rotation matrices.
+        """
+        B, D = z.shape
+        N = self.centers.shape[0]
+        
+        # Radial vector: r - r_i
+        # (B, N, D)
+        rvec = z.unsqueeze(1) - self.centers.unsqueeze(0)
+        
+        # Efficient "Cross Product" in D-dimensions:
+        # We rotate the radial vector 90 degrees in pairwise planes.
+        # (x0, x1, x2, x3...) -> (-x1, x0, -x3, x2...)
+        rvec_rotated = torch.zeros_like(rvec)
+        
+        # Determine the limit for pairwise swapping (handle odd dimensions)
+        limit = (D // 2) * 2
+        
+        # Swap pairs up to the limit: 
+        # e.g. indices [0, 2, 4] take values from [1, 3, 5] (negated)
+        # indices [1, 3, 5] take values from [0, 2, 4]
+        rvec_rotated[:, :, 0:limit:2] = -rvec[:, :, 1:limit:2]
+        rvec_rotated[:, :, 1:limit:2] =  rvec[:, :, 0:limit:2]
+        
+        # Handle odd dimension case if D is odd (leave last dim as 0, handled by zeros_like)
+        
+        # Application of Angular Momentum (Omegas)
+        # Scale the rotation by the strength of the vortex (Omega)
+        # We also weight by distance inverse to localize the swirl? 
+        # The raw Equation 2 in the paper is linear (Rigid rotation), 
+        # but for cognitive stability we usually want localized effects.
+        # We'll use a mild distance decay (1/r) to preventing unbounded flow at infinity
+        # while keeping the "frame dragging" spirit.
+        
+        r2 = torch.sum(rvec * rvec, dim=2) + self._eps
+        r_inv = 1.0 / torch.sqrt(r2) # (B, N)
+        
+        # Flow contributions: Ωᵢ * Rotated(r_vec) * Weight
+        # We broadcast omegas: (N,) -> (1, N, 1)
+        flow_contributions = self.omegas.view(1, N, 1) * rvec_rotated * r_inv.unsqueeze(2)
+        
+        # Sum all vortices
+        u_g = torch.sum(flow_contributions, dim=1) # (B, D)
+        
+        return u_g
+
     def temporal_pipeline_step(self, z: torch.Tensor) -> torch.Tensor:
         """Single temporal step with vectorized operations."""
+        # Gradient forces (Gravity/Refraction)
         grad = self.vectorized_grad_ln_n(z)
-        z_new = z + self.dt * self.beta * grad
+        velocity = self.beta * grad
+        
+        # Flow forces (Frame Dragging/Intent)
+        if self.enable_flow:
+             flow = self.vectorized_flow_field(z)
+             velocity = velocity + flow
+            
+        z_new = z + self.dt * velocity
         return torch.clamp(z_new, -self.clamp, self.clamp)
     
-    def parallel_temporal_evolution(self, z: torch.Tensor) -> torch.Tensor:
+    def parallel_temporal_evolution(self, z: torch.Tensor, return_trajectory: bool = False) -> torch.Tensor:
         """
         Parallel temporal evolution using pipeline overlapping.
         
         For embarrassingly parallel computation, each PMFlow center
         acts independently like gravitational point masses.
         """
+        trajectory = []
+        if return_trajectory:
+            trajectory.append(z)
+
         if not self.temporal_parallel or self.steps <= 2:
             # Standard sequential evolution
             for _ in range(self.steps):
                 z = self.temporal_pipeline_step(z)
+                if return_trajectory:
+                    trajectory.append(z)
+            
+            if return_trajectory:
+                 return torch.stack(trajectory, dim=1) # (B, Steps+1, D)
             return z
         
         # Pipeline parallel evolution
@@ -86,23 +163,40 @@ class ParallelPMField(nn.Module):
             # Small batch - use standard evolution
             for _ in range(self.steps):
                 z = self.temporal_pipeline_step(z)
+                if return_trajectory:
+                    trajectory.append(z)
+            
+            if return_trajectory:
+                 return torch.stack(trajectory, dim=1)
             return z
         
         # Large batch - use chunked parallel processing
         chunks = torch.chunk(z, math.ceil(B / self.chunk_size), dim=0)
         evolved_chunks = []
+        traj_chunks = []
         
         for chunk in chunks:
             z_chunk = chunk
+            chunk_history = []
+            if return_trajectory:
+                chunk_history.append(z_chunk)
+                
             for _ in range(self.steps):
                 z_chunk = self.temporal_pipeline_step(z_chunk)
+                if return_trajectory:
+                    chunk_history.append(z_chunk)
+            
             evolved_chunks.append(z_chunk)
+            if return_trajectory:
+                traj_chunks.append(torch.stack(chunk_history, dim=1))
         
+        if return_trajectory:
+            return torch.cat(traj_chunks, dim=0)
         return torch.cat(evolved_chunks, dim=0)
     
-    def forward(self, z: torch.Tensor) -> torch.Tensor:
+    def forward(self, z: torch.Tensor, return_trajectory: bool = False) -> torch.Tensor:
         """Forward pass with temporal parallelism."""
-        return self.parallel_temporal_evolution(z)
+        return self.parallel_temporal_evolution(z, return_trajectory=return_trajectory)
 
 class VectorizedLateralEI(nn.Module):
     """

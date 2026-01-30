@@ -5,6 +5,7 @@ A BioNN (Biological Neural Network) enhanced neural embedding system with contra
 ## Features
 
 - **BioNN-Enhanced Embeddings**: Biological Neural Network layers for uncertainty-aware representations
+- **Agentic Physics Engine**: Frame-dragging flow fields and trajectory tracking for active reasoning
 - **Contrastive Learning**: Optional contrastive training for semantic similarity
 - **Flexible Architecture**: Supports various dimensionalities and latent spaces
 - **Production Ready**: Simple API, tested in real applications
@@ -75,6 +76,27 @@ doc_emb = encoder.encode(["deep", "neural", "networks"])
 similarity = torch.cosine_similarity(query_emb, doc_emb, dim=0)
 ```
 
+### Agentic Reasoning with Flow Fields (v0.3.2)
+
+PMFlow now supports "Agentic Physics" where thoughts are driven by intent ("Flow") rather than just passive retrieval ("Gravity").
+
+```python
+from pmflow.core.pmflow import ParallelPMField
+
+# Enable Flow Field (Frame Dragging)
+pm = ParallelPMField(d_latent=64, enable_flow=True)
+
+# Set Intent (Angular Momentum on Goal Concept)
+pm.omegas[target_index] = 2.0 
+
+# Get Full Reasoning Trajectory
+trajectory = pm(input_vector, return_trajectory=True)
+# Shape: (Batch, Steps+1, Dim)
+
+# Measure "Mental Effort" (Path Length)
+effort = torch.sum(torch.norm(trajectory[:, 1:] - trajectory[:, :-1], dim=2), dim=1)
+```
+
 ## Architecture
 
 PMFlow combines:
@@ -142,6 +164,13 @@ MIT License - see LICENSE file for details.
 Contributions welcome! See CONTRIBUTING.md for guidelines.
 
 ## Changelog
+
+### v0.3.2 (2026-01-30)
+- **Agentic Physics Upgrade**:
+    - Added Frame-Dragging Flow Field (`u_g = Ω × r`) to `ParallelPMField` via `enable_flow=True`.
+    - Added `omegas` parameter to control angular momentum (Intent).
+    - Added `return_trajectory` option to retrieve the full geodesic path of the reasoning process.
+- Implemented efficient O(D) pairwise rotation kernel for high-dimensional flow.
 
 ### v0.3.0 (2025-11-25)
 - Production release
