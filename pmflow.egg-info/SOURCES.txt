@@ -6,6 +6,7 @@ STRUCTURE.md
 all_formulas_fixed.pdf
 all_formulas_fixed.tex
 pyproject.toml
+examples/demo_agentic_physics.py
 examples/simple_example.py
 pmflow/__init__.py
 pmflow/encoder.py
@@ -36,5 +37,6 @@ pmflow/utils/factory.py
 pmflow/utils/utils.py
 tests/test_basic.py
 tests/test_encoder.py
+tests/test_flow_physics.py
 tests/__pycache__/test_basic.cpython-313-pytest-8.3.5.pyc
 tests/__pycache__/test_encoder.cpython-313-pytest-8.3.5.pyc

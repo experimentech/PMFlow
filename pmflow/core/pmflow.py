@@ -437,7 +437,7 @@ class MultiScalePMField(nn.Module):
     """
     
     def __init__(self, d_latent=64, n_centers_fine=128, n_centers_coarse=32,
-                 steps_fine=5, steps_coarse=3, dt=0.15, beta=1.2, clamp=3.0):
+                 steps_fine=5, steps_coarse=3, dt=0.15, beta=1.2, clamp=3.0, enable_flow=False):
         super().__init__()
         
         # Fine-grained field for specific concepts
@@ -447,7 +447,8 @@ class MultiScalePMField(nn.Module):
             steps=steps_fine,
             dt=dt,
             beta=beta,
-            clamp=clamp
+            clamp=clamp,
+            enable_flow=enable_flow
         )
         
         # Coarse-grained field for categories
@@ -458,7 +459,8 @@ class MultiScalePMField(nn.Module):
             steps=steps_coarse,
             dt=dt * 1.5,  # Larger steps for coarser dynamics
             beta=beta,
-            clamp=clamp
+            clamp=clamp,
+            enable_flow=enable_flow
         )
         
         # Learnable pooling for coarse level
