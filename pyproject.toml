@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pmflow"
-version = "0.3.3"
-description = "BioNN-enhanced probabilistic masked flow for neural embeddings"
+version = "0.3.4"
+description = "BioNN-enhanced probabilistic masked flow for neural embeddings with agentic physics"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}

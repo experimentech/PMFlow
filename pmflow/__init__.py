@@ -2,9 +2,15 @@
 PMFlow - Probabilistic Masked Flow for Neural Embeddings
 
 Core library plus retrieval and contrastive extensions.
+
+v0.3.4: Added Agentic Physics API
+  - PMFlowEmbeddingEncoder.trace_trajectory() - trace reasoning paths
+  - PMFlowEmbeddingEncoder.inject_intent() - bias toward goals
+  - PMFlowEmbeddingEncoder.clear_intent() - reset frame-dragging
+  - enable_flow parameter for physics-based reasoning
 """
 
-__version__ = "0.3.3"
+__version__ = "0.3.4"
 
 # Primary encoder
 from pmflow.encoder import PMFlowEmbeddingEncoder

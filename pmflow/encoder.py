@@ -44,6 +44,13 @@ class PMFlowEmbeddingEncoder:
     stable across runs. Optional ``target_pm_dim`` trims/pads PM outputs to a
     deterministic width so downstream callers can preallocate fixed-size
     vectors even when multi-scale fields change the latent width.
+    
+    Agentic Physics (v0.3.4+):
+        When ``enable_flow=True``, the PMFlow field uses frame-dragging physics
+        to enable intent-driven reasoning. This allows:
+        - Trajectory tracing through concept space
+        - Intent injection via omega-spin modulation
+        - Non-obvious concept path discovery
     """
 
     def __init__(
@@ -56,6 +63,7 @@ class PMFlowEmbeddingEncoder:
         device: Optional[torch.device] = None,
         base_encoder: Optional[HashedEmbeddingEncoder] = None,
         target_pm_dim: Optional[int] = None,
+        enable_flow: bool = False,
     ) -> None:
         if combine_mode not in {"concat", "pm-only"}:
             raise ValueError("combine_mode must be 'concat' or 'pm-only'.")
@@ -66,7 +74,8 @@ class PMFlowEmbeddingEncoder:
         self.latent_dim = latent_dim
         self.target_pm_dim = target_pm_dim
         self._projection = self._build_projection_matrix(self.dimension, latent_dim, seed).to(self.device)
-        self.pm_field = self._init_pm_field(latent_dim, seed)
+        self.enable_flow = enable_flow
+        self.pm_field = self._init_pm_field(latent_dim, seed, enable_flow)
         self.pm_field.to(self.device)
         self.pm_field.eval()
         self._state_path: Optional[Path] = None
@@ -78,7 +87,7 @@ class PMFlowEmbeddingEncoder:
         return torch.from_numpy(matrix)
 
     @staticmethod
-    def _init_pm_field(latent_dim: int, seed: int):
+    def _init_pm_field(latent_dim: int, seed: int, enable_flow: bool = False):
         """Create a deterministic PMFlow field using bundled implementations."""
         from pmflow.core.pmflow import MultiScalePMField, ParallelPMField
 
@@ -93,6 +102,7 @@ class PMFlowEmbeddingEncoder:
                 dt=0.15,
                 beta=1.2,
                 clamp=3.0,
+                enable_flow=enable_flow,
             )
             generator = torch.Generator().manual_seed(seed)
             with torch.no_grad():
@@ -108,6 +118,14 @@ class PMFlowEmbeddingEncoder:
                 )
                 field.fine_field.centers.copy_(centres_fine)
                 field.fine_field.mus.copy_(mus_fine)
+                # Initialize omegas for frame-dragging (agentic physics)
+                if hasattr(field.fine_field, 'omegas'):
+                    omegas_fine = torch.randn(
+                        field.fine_field.omegas.shape,
+                        generator=generator,
+                        device=field.fine_field.omegas.device,
+                    ) * 0.01
+                    field.fine_field.omegas.copy_(omegas_fine)
 
                 centres_coarse = torch.randn(
                     field.coarse_field.centers.shape,
@@ -121,10 +139,18 @@ class PMFlowEmbeddingEncoder:
                 )
                 field.coarse_field.centers.copy_(centres_coarse)
                 field.coarse_field.mus.copy_(mus_coarse)
+                # Initialize omegas for coarse field too
+                if hasattr(field.coarse_field, 'omegas'):
+                    omegas_coarse = torch.randn(
+                        field.coarse_field.omegas.shape,
+                        generator=generator,
+                        device=field.coarse_field.omegas.device,
+                    ) * 0.01
+                    field.coarse_field.omegas.copy_(omegas_coarse)
             return field
         except Exception:
             # Fall back to a single-scale field if multi-scale construction fails.
-            field = ParallelPMField(d_latent=latent_dim, steps=5, dt=0.08, beta=0.9, clamp=2.5)
+            field = ParallelPMField(d_latent=latent_dim, steps=5, dt=0.08, beta=0.9, clamp=2.5, enable_flow=enable_flow)
             generator = torch.Generator().manual_seed(seed)
             with torch.no_grad():
                 centres = torch.randn(
@@ -135,6 +161,10 @@ class PMFlowEmbeddingEncoder:
                 mus = torch.full(field.mus.shape, 0.35, device=field.mus.device)
                 field.centers.copy_(centres)
                 field.mus.copy_(mus)
+                # Initialize omegas
+                if hasattr(field, 'omegas'):
+                    omegas = torch.randn(field.omegas.shape, generator=generator, device=field.omegas.device) * 0.01
+                    field.omegas.copy_(omegas)
             return field
 
     def encode(self, tokens: Iterable[str]) -> torch.Tensor:
@@ -245,3 +275,175 @@ class PMFlowEmbeddingEncoder:
             return tensor[..., : self.target_pm_dim]
         pad = self.target_pm_dim - current
         return F.pad(tensor, (0, pad))
+
+    # ========================================================================
+    # Agentic Physics API (v0.3.4+)
+    # ========================================================================
+    
+    def trace_trajectory(
+        self, 
+        tokens: Iterable[str], 
+        steps: Optional[int] = None
+    ) -> tuple[torch.Tensor, dict]:
+        """
+        Trace a trajectory through concept space for the given input.
+        
+        This enables "thinking" as a physical process - the trajectory
+        represents the reasoning path through the PMFlow latent landscape.
+        
+        Args:
+            tokens: Input tokens to encode and trace
+            steps: Override default evolution steps (more steps = deeper thought)
+            
+        Returns:
+            trajectory: Tensor of shape (1, steps+1, D) representing the path
+            metrics: Dict with path_length (mental effort), displacement, efficiency
+        """
+        if not self.enable_flow:
+            raise RuntimeError("trace_trajectory requires enable_flow=True")
+        
+        with torch.no_grad():
+            base = self.base_encoder.encode(tokens).to(self.device)
+            latent = base @ self._projection
+            
+            # Get the active field (fine_field for MultiScale)
+            if hasattr(self.pm_field, 'fine_field'):
+                active_field = self.pm_field.fine_field
+            else:
+                active_field = self.pm_field
+            
+            # Override steps if requested
+            original_steps = active_field.steps
+            if steps is not None:
+                active_field.steps = steps
+            
+            try:
+                trajectory = active_field(latent, return_trajectory=True)
+            finally:
+                active_field.steps = original_steps
+            
+            # Compute metrics
+            start = trajectory[0, 0]
+            end = trajectory[0, -1]
+            
+            diffs = trajectory[0, 1:] - trajectory[0, :-1]
+            segment_lengths = torch.norm(diffs, dim=1)
+            path_length = segment_lengths.sum().item()
+            displacement = torch.norm(end - start).item()
+            efficiency = displacement / (path_length + 1e-6)
+            
+            metrics = {
+                "path_length": path_length,  # Mental effort
+                "displacement": displacement,  # How far we moved
+                "efficiency": min(1.0, efficiency),  # Path straightness (confidence)
+                "steps": trajectory.shape[1] - 1,
+            }
+            
+            return trajectory.cpu(), metrics
+    
+    def inject_intent(
+        self, 
+        goal_tokens: Iterable[str], 
+        strength: float = 0.5,
+        decay_radius: float = 2.0
+    ) -> int:
+        """
+        Inject intent (active will) into the PMFlow field.
+        
+        This modulates the omega (spin) of nearby gravitational centers,
+        creating a frame-dragging effect that biases future trajectories
+        toward the goal concept. This is "agentic" physics - the field
+        actively works toward an outcome.
+        
+        Args:
+            goal_tokens: Tokens representing the goal/intent
+            strength: How strongly to activate spin (0.0-1.0)
+            decay_radius: Gaussian falloff radius for spin influence
+            
+        Returns:
+            Number of centers affected
+        """
+        if not self.enable_flow:
+            raise RuntimeError("inject_intent requires enable_flow=True")
+        
+        with torch.no_grad():
+            base = self.base_encoder.encode(goal_tokens).to(self.device)
+            latent = base @ self._projection
+            
+            # Get the active field
+            if hasattr(self.pm_field, 'fine_field'):
+                target_field = self.pm_field.fine_field
+            else:
+                target_field = self.pm_field
+            
+            if not hasattr(target_field, 'omegas'):
+                return 0
+            
+            # Calculate proximity to all centers
+            dists = torch.cdist(latent, target_field.centers)
+            proximity = torch.exp(-dists[0]**2 / (2 * decay_radius**2))
+            
+            # Activate spin for nearby centers
+            current_spin = target_field.omegas.data
+            
+            # Initialize random direction for zero-spin centers
+            zero_mask = (current_spin.abs() < 1e-6)
+            if zero_mask.any():
+                current_spin[zero_mask] = torch.randn_like(current_spin[zero_mask]) * 0.1
+            
+            # Add spin proportional to proximity
+            prox_norm = proximity / (proximity.sum() + 1e-6)
+            target_field.omegas.data += strength * prox_norm * torch.sign(current_spin)
+            
+            # Count significantly affected centers
+            affected = (proximity > 0.1).sum().item()
+            return int(affected)
+    
+    def clear_intent(self) -> None:
+        """Reset all omega spins to near-zero (clear active will)."""
+        with torch.no_grad():
+            if hasattr(self.pm_field, 'fine_field'):
+                if hasattr(self.pm_field.fine_field, 'omegas'):
+                    self.pm_field.fine_field.omegas.data.mul_(0.01)
+                if hasattr(self.pm_field.coarse_field, 'omegas'):
+                    self.pm_field.coarse_field.omegas.data.mul_(0.01)
+            elif hasattr(self.pm_field, 'omegas'):
+                self.pm_field.omegas.data.mul_(0.01)
+    
+    def get_nearby_centers(
+        self, 
+        tokens: Iterable[str], 
+        topk: int = 5
+    ) -> list[tuple[int, float, float, float]]:
+        """
+        Find gravitational centers closest to the given input.
+        
+        Useful for debugging and understanding what concepts influence
+        the trajectory.
+        
+        Args:
+            tokens: Input to check
+            topk: Number of nearest centers to return
+            
+        Returns:
+            List of (center_idx, distance, mu (gravity), omega (spin))
+        """
+        with torch.no_grad():
+            base = self.base_encoder.encode(tokens).to(self.device)
+            latent = base @ self._projection
+            
+            if hasattr(self.pm_field, 'fine_field'):
+                target_field = self.pm_field.fine_field
+            else:
+                target_field = self.pm_field
+            
+            dists = torch.cdist(latent, target_field.centers)[0]
+            nearest = torch.argsort(dists)[:topk]
+            
+            results = []
+            for idx in nearest:
+                i = idx.item()
+                omega = target_field.omegas[i].item() if hasattr(target_field, 'omegas') else 0.0
+                results.append((i, dists[i].item(), target_field.mus[i].item(), omega))
+            
+            return results

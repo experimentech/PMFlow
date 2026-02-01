@@ -76,9 +76,38 @@ doc_emb = encoder.encode(["deep", "neural", "networks"])
 similarity = torch.cosine_similarity(query_emb, doc_emb, dim=0)
 ```
 
-### Agentic Reasoning with Flow Fields (v0.3.2)
+### Agentic Reasoning with Flow Fields (v0.3.4)
 
-PMFlow now supports "Agentic Physics" where thoughts are driven by intent ("Flow") rather than just passive retrieval ("Gravity").
+PMFlow supports "Agentic Physics" where thoughts are driven by intent ("Flow") rather than just passive retrieval ("Gravity").
+
+#### High-Level API (Encoder)
+
+```python
+from pmflow import PMFlowEmbeddingEncoder
+
+# Create encoder with flow enabled (required for agentic features)
+encoder = PMFlowEmbeddingEncoder(
+    dimension=96,
+    latent_dim=48,
+    enable_flow=True  # Enables frame-dragging physics
+)
+
+# Trace a reasoning trajectory through concept space
+trajectory, metrics = encoder.trace_trajectory(["machine", "learning"])
+print(f"Mental effort: {metrics['path_length']:.3f}")
+print(f"Efficiency: {metrics['efficiency']:.3f}")  # 1.0 = straight path (confident)
+
+# Inject intent to bias future reasoning toward a goal
+encoder.inject_intent(["deep", "learning"], strength=0.5)
+
+# Now trajectories will curve toward the goal concept
+trajectory2, metrics2 = encoder.trace_trajectory(["neural", "networks"])
+
+# Clear intent when done
+encoder.clear_intent()
+```
+
+#### Low-Level API (Field)
 
 ```python
 from pmflow.core.pmflow import ParallelPMField
@@ -164,6 +193,15 @@ MIT License - see LICENSE file for details.
 Contributions welcome! See CONTRIBUTING.md for guidelines.
 
 ## Changelog
+
+### v0.3.4 (2026-02-01)
+- **Agentic Physics Encoder API**:
+    - Added `PMFlowEmbeddingEncoder.trace_trajectory()` for reasoning path tracing
+    - Added `PMFlowEmbeddingEncoder.inject_intent()` for goal-directed bias
+    - Added `PMFlowEmbeddingEncoder.clear_intent()` to reset frame-dragging
+    - Added `PMFlowEmbeddingEncoder.get_nearby_centers()` for debugging
+    - Added `enable_flow` parameter to encoder constructor
+    - Proper omega initialization in both MultiScale and Parallel fields
 
 ### v0.3.2 (2026-01-30)
 - **Agentic Physics Upgrade**:
