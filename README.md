@@ -228,10 +228,10 @@ If you use PMFlow in your research, please cite:
 
 ```bibtex
 @software{pmflow2024,
-  title={PMFlow: Enhanced Probabilistic Masked Flow for Neural Embeddings},
-  author={Your Name},
-  year={2024},
-  url={https://github.com/yourusername/pmflow}
+  title={PMFlow: Enhanced Pushing Medium gravitational Flow based neural network},
+  author={Tristan Mumford},
+  year={2026},
+  url={https://github.com/experimentech/PMFlow}
 }
 ```
 
