@@ -126,6 +126,57 @@ trajectory = pm(input_vector, return_trajectory=True)
 effort = torch.sum(torch.norm(trajectory[:, 1:] - trajectory[:, :-1], dim=2), dim=1)
 ```
 
+### Reactive Agentic Execution (v0.3.5)
+
+PMFlow v0.3.5 adds a step-by-step execution API for reactive planning systems.
+Instead of tracing full trajectories upfront, you can evolve position step-by-step
+and modify the gravitational field based on outcomes.
+
+```python
+from pmflow.core.pmflow import ParallelPMField
+
+pm = ParallelPMField(d_latent=64, enable_flow=True)
+z = initial_position  # Your starting latent position
+
+for step in range(max_steps):
+    # Single physics step
+    z_next = pm.step(z)
+    
+    # Ground to nearest action (your grounding logic)
+    indices, dists, attractions = pm.find_nearest_centers(z_next, top_k=3)
+    action = choose_action(indices[0])
+    
+    # Execute action and get result
+    result = execute_action(action)
+    
+    if result.failed:
+        # Mark this region as a hazard - trajectories will curve away
+        pm.mark_as_hazard(z_next, radius=1.0, repulsion_strength=-0.5)
+        # Also adjust specific center gravity
+        pm.adjust_gravity(center_idx, mu_delta=-0.3, omega_delta=0.0)
+    elif result.success:
+        # Mark as attractor - reinforce this path
+        pm.mark_as_attractor(z_next, radius=1.0, attraction_strength=0.3)
+    
+    # Apply external perturbation if needed
+    perturbation = encode_result_as_perturbation(result)
+    z = pm.inject_perturbation(z_next, perturbation, blend_factor=0.2)
+    
+    if goal_reached(z):
+        break
+```
+
+**New Methods in ParallelPMField:**
+
+| Method | Description |
+|--------|-------------|
+| `step(z)` | Single physics step (vs full trajectory) |
+| `adjust_gravity(idx, mu_delta, omega_delta)` | Modify specific center |
+| `inject_perturbation(z, perturbation, blend)` | Apply external force |
+| `find_nearest_centers(z, top_k)` | Find closest gravitational centers |
+| `mark_as_hazard(z, radius, strength)` | Create repulsive region |
+| `mark_as_attractor(z, radius, strength)` | Create attractive region |
+
 ## Architecture
 
 PMFlow combines:

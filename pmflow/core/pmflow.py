@@ -197,6 +197,184 @@ class ParallelPMField(nn.Module):
     def forward(self, z: torch.Tensor, return_trajectory: bool = False) -> torch.Tensor:
         """Forward pass with temporal parallelism."""
         return self.parallel_temporal_evolution(z, return_trajectory=return_trajectory)
+    
+    # ========================================================================
+    # Agentic Execution API (v0.3.5+)
+    # ========================================================================
+    
+    def step(self, z: torch.Tensor) -> torch.Tensor:
+        """
+        Single physics step through the gravitational field.
+        
+        This is the public API for step-by-step trajectory execution,
+        enabling reactive replanning in agentic systems.
+        
+        Args:
+            z: Current position in latent space (B, D)
+            
+        Returns:
+            z_new: Position after one physics step (B, D)
+        """
+        return self.temporal_pipeline_step(z)
+    
+    def adjust_gravity(
+        self, 
+        center_idx: int, 
+        mu_delta: float = 0.0, 
+        omega_delta: float = 0.0,
+        mu_scale: float = 1.0,
+        omega_scale: float = 1.0,
+    ) -> None:
+        """
+        Dynamically adjust gravitational parameters for a specific center.
+        
+        This enables reactive adaptation during agentic execution:
+        - Increase μ to make a center more attractive (goal achieved)
+        - Decrease μ to make it repulsive (dead end encountered)
+        - Adjust ω to modify frame-dragging flow (redirect trajectory)
+        
+        Args:
+            center_idx: Index of the center to modify
+            mu_delta: Amount to add to gravitational strength (can be negative)
+            omega_delta: Amount to add to spin/rotation (can be negative)
+            mu_scale: Multiplicative factor for mu (applied after delta)
+            omega_scale: Multiplicative factor for omega (applied after delta)
+        """
+        with torch.no_grad():
+            if 0 <= center_idx < self.mus.shape[0]:
+                self.mus[center_idx] = (self.mus[center_idx] + mu_delta) * mu_scale
+                if hasattr(self, 'omegas'):
+                    self.omegas[center_idx] = (self.omegas[center_idx] + omega_delta) * omega_scale
+    
+    def inject_perturbation(
+        self, 
+        z: torch.Tensor, 
+        perturbation: torch.Tensor,
+        blend_factor: float = 0.5,
+    ) -> torch.Tensor:
+        """
+        Inject an external perturbation into the latent position.
+        
+        This enables incorporating outcome-based feedback into the trajectory
+        without re-encoding from text. The physics then naturally adapts.
+        
+        Args:
+            z: Current position (B, D)
+            perturbation: External force/displacement to apply (B, D) or (D,)
+            blend_factor: How strongly to apply perturbation (0=ignore, 1=full)
+            
+        Returns:
+            z_perturbed: Position with perturbation applied
+        """
+        if perturbation.dim() == 1:
+            perturbation = perturbation.unsqueeze(0)
+        
+        z_perturbed = z + blend_factor * perturbation
+        return torch.clamp(z_perturbed, -self.clamp, self.clamp)
+    
+    def find_nearest_centers(
+        self, 
+        z: torch.Tensor, 
+        top_k: int = 5,
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        Find the nearest gravitational centers to a position.
+        
+        Useful for grounding trajectory points to action nodes.
+        
+        Args:
+            z: Position in latent space (B, D)
+            top_k: Number of nearest centers to return
+            
+        Returns:
+            indices: Center indices (B, top_k)
+            distances: Distances to centers (B, top_k)
+            attractions: Gravitational attractions μ/r (B, top_k)
+        """
+        # Compute distances
+        dists = torch.cdist(z, self.centers)  # (B, N)
+        
+        # Get top-k nearest
+        top_k_dists, top_k_indices = torch.topk(dists, top_k, dim=1, largest=False)
+        
+        # Compute attractions for nearest centers
+        top_k_mus = self.mus[top_k_indices]  # (B, top_k)
+        top_k_attractions = top_k_mus / (top_k_dists + 1e-6)
+        
+        return top_k_indices, top_k_dists, top_k_attractions
+    
+    def mark_as_hazard(
+        self,
+        z: torch.Tensor,
+        radius: float = 1.0,
+        repulsion_strength: float = -0.5,
+    ) -> int:
+        """
+        Mark a region of latent space as a hazard (dead end).
+        
+        This reduces the μ of nearby centers, making trajectories
+        curve away from this region. Implements the "obstacle avoidance"
+        aspect of Pushing-Medium physics.
+        
+        Args:
+            z: Center of hazard region (1, D) or (D,)
+            radius: Radius of effect
+            repulsion_strength: How much to reduce μ (negative = repulsive)
+            
+        Returns:
+            Number of centers affected
+        """
+        if z.dim() == 1:
+            z = z.unsqueeze(0)
+        
+        with torch.no_grad():
+            # Find centers within radius
+            dists = torch.cdist(z, self.centers).squeeze(0)  # (N,)
+            affected_mask = dists < radius
+            
+            # Reduce mu for affected centers (proportional to proximity)
+            proximity = 1.0 - (dists[affected_mask] / radius)
+            self.mus[affected_mask] += repulsion_strength * proximity
+            
+            # Also add counter-rotation to push away
+            if hasattr(self, 'omegas') and self.enable_flow:
+                self.omegas[affected_mask] *= -1.0  # Reverse spin
+            
+            return int(affected_mask.sum().item())
+    
+    def mark_as_attractor(
+        self,
+        z: torch.Tensor,
+        radius: float = 1.0,
+        attraction_strength: float = 0.5,
+    ) -> int:
+        """
+        Mark a region of latent space as attractive (successful outcome).
+        
+        This increases the μ of nearby centers, making trajectories
+        curve toward this region.
+        
+        Args:
+            z: Center of attractive region (1, D) or (D,)
+            radius: Radius of effect
+            attraction_strength: How much to increase μ
+            
+        Returns:
+            Number of centers affected
+        """
+        if z.dim() == 1:
+            z = z.unsqueeze(0)
+        
+        with torch.no_grad():
+            # Find centers within radius
+            dists = torch.cdist(z, self.centers).squeeze(0)  # (N,)
+            affected_mask = dists < radius
+            
+            # Increase mu for affected centers
+            proximity = 1.0 - (dists[affected_mask] / radius)
+            self.mus[affected_mask] += attraction_strength * proximity
+            
+            return int(affected_mask.sum().item())
 
 class VectorizedLateralEI(nn.Module):
     """
@@ -329,94 +507,6 @@ def vectorized_pm_plasticity(pmfield: ParallelPMField, z_batch: torch.Tensor,
     weighted_z = torch.sum(W.T.unsqueeze(2) * z_batch.unsqueeze(0), dim=1)  # (N, D)
     target = weighted_z / W_sum  # (N, D)
     pmfield.centers.add_(c_lr * (target - C))
-
-
-@torch.no_grad()
-def contrastive_plasticity(
-    pmfield: ParallelPMField,
-    similar_pairs: List[Tuple[torch.Tensor, torch.Tensor]],
-    dissimilar_pairs: List[Tuple[torch.Tensor, torch.Tensor]],
-    mu_lr: float = 1e-3,
-    c_lr: float = 1e-3,
-    margin: float = 1.0,
-):
-    """Contrastive plasticity update for improved concept separation.
-
-    Pulls similar embeddings together and pushes dissimilar ones apart by
-    nudging PMFlow centers and gravitational strengths. Mirrors the legacy
-    helper from pmflow_bnn_enhanced for backwards compatibility.
-    """
-
-    s2 = 0.8 ** 2
-    C = pmfield.centers
-    N, _ = C.shape
-
-    # Pull together similar pairs
-    if similar_pairs:
-        similar_targets = []
-        similar_weights = []
-        for emb1, emb2 in similar_pairs:
-            target = (emb1 + emb2) / 2.0
-            similar_targets.append(target.squeeze())
-
-            dist2 = torch.sum((C - target) ** 2, dim=1)
-            weight = torch.exp(-dist2 / (2 * s2))
-            similar_weights.append(weight)
-
-        if similar_targets:
-            similar_targets = torch.stack(similar_targets)
-            similar_weights = torch.stack(similar_weights)
-
-            W_sum = torch.sum(similar_weights, dim=0, keepdim=True).T + 1e-6
-            weighted_targets = torch.sum(
-                similar_weights.T.unsqueeze(2) * similar_targets.unsqueeze(0),
-                dim=1,
-            )
-            target_pull = weighted_targets / W_sum
-
-            C.add_(c_lr * 0.5 * (target_pull - C))
-
-            mu_drive = torch.mean(similar_weights, dim=0)
-            pmfield.mus.add_(mu_lr * mu_drive)
-
-    # Push apart dissimilar pairs
-    if dissimilar_pairs:
-        for emb1, emb2 in dissimilar_pairs:
-            current_dist = torch.norm(emb1 - emb2)
-            if current_dist < margin:
-                push_vector = emb1 - emb2
-                push_vector = push_vector / (torch.norm(push_vector) + 1e-6)
-
-                dist1_to_centers = torch.sum((C - emb1) ** 2, dim=1)
-                dist2_to_centers = torch.sum((C - emb2) ** 2, dim=1)
-
-                weight1 = torch.exp(-dist1_to_centers / (2 * s2))
-                weight2 = torch.exp(-dist2_to_centers / (2 * s2))
-
-                push_strength = (margin - current_dist.item()) / margin
-                C.add_(
-                    c_lr
-                    * 0.1
-                    * push_strength
-                    * (weight1.unsqueeze(1) * push_vector - weight2.unsqueeze(1) * push_vector)
-                )
-
-
-def batch_plasticity_update(
-    pmfield: ParallelPMField,
-    examples: List[torch.Tensor],
-    mu_lr: float = 5e-4,
-    c_lr: float = 5e-4,
-    batch_size: int = 32,
-):
-    """Mini-batch wrapper around ``vectorized_pm_plasticity`` for efficiency."""
-
-    n_examples = len(examples)
-    for i in range(0, n_examples, batch_size):
-        batch = examples[i : i + batch_size]
-        z_batch = torch.stack([ex.squeeze() for ex in batch])
-        h_batch = pmfield(z_batch)
-        vectorized_pm_plasticity(pmfield, z_batch, h_batch, mu_lr=mu_lr, c_lr=c_lr)
 
 
 # ============================================================================

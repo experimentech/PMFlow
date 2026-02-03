@@ -306,72 +306,6 @@ def create_contrastive_encoder(base_encoder, projection_type: str = "residual") 
 
     This keeps the encoder architecture intact while enabling contrastive
     training on top of the existing PMField.
-    """
-
-    return ContrastivePMField(pm_field=base_encoder.pm_field, projection_type=projection_type)
-
-
-def train_contrastive_pmfield(
-    model: ContrastivePMField,
-    similar_pairs: List[Tuple[torch.Tensor, torch.Tensor]],
-    dissimilar_pairs: List[Tuple[torch.Tensor, torch.Tensor]],
-    epochs: int = 100,
-    center_lr: float = 1e-4,
-    projection_lr: float = 1e-3,
-    margin: float = 0.2,
-    temperature: float = 0.1,
-    verbose: bool = True
-) -> List[dict]:
-    """
-    Train ContrastivePMField via contrastive learning.
-    
-    This function runs multiple epochs of contrastive updates, tracking
-    progress and returning metrics history.
-    
-    Args:
-        model: ContrastivePMField to train
-        similar_pairs: List of similar (z1, z2) latent pairs
-        dissimilar_pairs: List of dissimilar (z1, z2) latent pairs
-        epochs: Number of training epochs
-        center_lr: Learning rate for PMField centers
-        projection_lr: Learning rate for projection layer
-        margin: Contrastive margin
-        temperature: Similarity temperature
-        verbose: Whether to print progress
-        
-    Returns:
-        history: List of metric dicts per epoch
-    """
-    history = []
-    
-    for epoch in range(epochs):
-        metrics = contrastive_learning_step(
-            model, similar_pairs, dissimilar_pairs,
-            center_lr=center_lr,
-            projection_lr=projection_lr,
-            margin=margin,
-            temperature=temperature
-        )
-        
-        history.append(metrics)
-        
-        if verbose and (epoch % 10 == 0 or epoch == epochs - 1):
-            print(f"Epoch {epoch:3d}: "
-                  f"Loss={metrics['total_loss']:.4f}, "
-                  f"Similar={metrics['avg_similar_sim']:.3f}, "
-                  f"Dissimilar={metrics['avg_dissimilar_sim']:.3f}, "
-                  f"Sep={metrics['separation']:.3f}")
-    
-    return history
-
-
-# Example usage function
-def create_contrastive_encoder(base_encoder, projection_type="residual"):
-    """
-    Create a contrastive-trainable version of PMFlowEmbeddingEncoder.
-    
-    This wraps the existing PMField with ContrastivePMField, enabling
-    contrastive learning without disrupting the encoder's architecture.
     
     Args:
         base_encoder: PMFlowEmbeddingEncoder instance
@@ -380,13 +314,5 @@ def create_contrastive_encoder(base_encoder, projection_type="residual"):
     Returns:
         contrastive_field: ContrastivePMField wrapping the base encoder's PMField
     """
-    # Extract the PMField from the encoder
     pm_field = base_encoder.pm_field
-    
-    # Wrap it in ContrastivePMField
-    contrastive_field = ContrastivePMField(
-        pm_field=pm_field,
-        projection_type=projection_type
-    )
-    
-    return contrastive_field
+    return ContrastivePMField(pm_field=pm_field, projection_type=projection_type)

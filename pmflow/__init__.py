@@ -3,6 +3,16 @@ PMFlow - Probabilistic Masked Flow for Neural Embeddings
 
 Core library plus retrieval and contrastive extensions.
 
+v0.3.5: Agentic Execution API for reactive planning
+  - ParallelPMField.step() - single-step evolution for reactive execution
+  - ParallelPMField.adjust_gravity() - dynamic μ/Ω modification
+  - ParallelPMField.inject_perturbation() - external force injection
+  - ParallelPMField.find_nearest_centers() - grounding helper
+  - ParallelPMField.mark_as_hazard() - obstacle avoidance
+  - ParallelPMField.mark_as_attractor() - goal reinforcement
+  - Fixed duplicate function definitions
+  - Fixed test suite to match actual API
+
 v0.3.4: Added Agentic Physics API
   - PMFlowEmbeddingEncoder.trace_trajectory() - trace reasoning paths
   - PMFlowEmbeddingEncoder.inject_intent() - bias toward goals
@@ -10,7 +20,7 @@ v0.3.4: Added Agentic Physics API
   - enable_flow parameter for physics-based reasoning
 """
 
-__version__ = "0.3.4"
+__version__ = "0.3.5"
 
 # Primary encoder
 from pmflow.encoder import PMFlowEmbeddingEncoder
