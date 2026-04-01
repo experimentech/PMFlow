@@ -1,14 +1,17 @@
 # PMFlow - Enhanced Pushing Medium gravitational Flow based neural network
 
-A BioNN (Biological Neural Network) enhanced neural embedding system with contrastive learning and semantic retrieval capabilities.
+A physics-inspired neural architecture combining gravitational particle dynamics with biological neural networks. PMFlow provides embeddings, language modeling, retrieval, and contrastive learning capabilities grounded in general relativity analogies.
 
 ## Features
 
+- **Gravitational Particle Dynamics**: Token/concept evolution through learned semantic attractor fields
 - **BioNN-Enhanced Embeddings**: Biological Neural Network layers for uncertainty-aware representations
-- **Agentic Physics Engine**: Frame-dragging flow fields and trajectory tracking for active reasoning
+- **Language Modeling**: Full sequence modeling via gravitational field evolution (v0.3.5+)
+- **Agentic Physics**: Frame-dragging flow fields and trajectory tracking for intent-driven reasoning
+- **Advanced Retrieval**: Query expansion, semantic neighborhoods, hierarchical retrieval
 - **Contrastive Learning**: Optional contrastive training for semantic similarity
-- **Flexible Architecture**: Supports various dimensionalities and latent spaces
-- **Production Ready**: Simple API, tested in real applications
+- **Multi-Scale Architecture**: Hierarchical concept representations
+- **Production Ready**: Simple high-level API with low-level research components available
 
 ## Installation
 
@@ -25,62 +28,59 @@ pip install -e .
 
 ## Quick Start
 
+### Embeddings
 ```python
 from pmflow import PMFlowEmbeddingEncoder
 
 # Create encoder
 encoder = PMFlowEmbeddingEncoder(
-    dimension=64,      # Embedding dimension
-    latent_dim=32,     # BioNN latent dimension
-    vocab_size=10000   # Vocabulary size (optional)
+    dimension=96,      # Output embedding dimension
+    latent_dim=48,     # Gravitational field latent dimension
 )
 
 # Encode tokens
 tokens = ["hello", "world", "example"]
 embedding = encoder.encode(tokens)
 
-print(embedding.shape)  # (64,) - sentence-level embedding
+print(embedding.shape)  # (1, 96) - normalized embedding
+```
+
+### Language Modeling
+```python
+import torch
+from pmflow.lm import PMFlowLanguageModel
+
+# Create model
+model = PMFlowLanguageModel(
+    vocab_size=10000,
+    embedding_dim=256,
+    latent_dim=128,
+    n_centers=128,
+    steps_per_token=4,
+    enable_flow=True
+)
+
+# Forward pass
+token_ids = torch.tensor([[1, 2, 3, 4, 5]])
+logits = model(token_ids)
+print(logits.shape)  # (batch, seq_len, vocab_size)
+
+# Generation
+generated = model.generate(
+    prompt_ids=[1, 2, 3],
+    max_new_tokens=50,
+    temperature=0.8,
+    top_k=50
+)
 ```
 
 ## Advanced Usage
 
-### With Contrastive Learning
+### Agentic Reasoning with Flow Fields
 
-```python
-from pmflow import PMFlowEmbeddingEncoder
+PMFlow supports "Agentic Physics" where thoughts are driven by intent ("Flow") rather than just passive retrieval ("Gravity"). This enables goal-directed reasoning and trajectory tracing.
 
-encoder = PMFlowEmbeddingEncoder(
-    dimension=128,
-    latent_dim=64,
-    use_contrastive=True,
-    temperature=0.07
-)
-
-# Train with positive/negative pairs
-positive_pairs = [
-    (["the", "cat"], ["a", "feline"]),
-    (["machine", "learning"], ["deep", "learning"])
-]
-
-encoder.train_contrastive(positive_pairs, epochs=10)
-```
-
-### Semantic Similarity
-
-```python
-# Encode queries
-query_emb = encoder.encode(["machine", "learning"])
-doc_emb = encoder.encode(["deep", "neural", "networks"])
-
-# Compute similarity
-similarity = torch.cosine_similarity(query_emb, doc_emb, dim=0)
-```
-
-### Agentic Reasoning with Flow Fields (v0.3.4)
-
-PMFlow supports "Agentic Physics" where thoughts are driven by intent ("Flow") rather than just passive retrieval ("Gravity").
-
-#### High-Level API (Encoder)
+#### Encoder API (High-Level)
 
 ```python
 from pmflow import PMFlowEmbeddingEncoder
@@ -105,116 +105,293 @@ trajectory2, metrics2 = encoder.trace_trajectory(["neural", "networks"])
 
 # Clear intent when done
 encoder.clear_intent()
+
+# Debugging: Find nearby gravitational centers
+nearby = encoder.get_nearby_centers(["machine", "learning"], topk=5)
+# Returns list of (center_idx, distance, mu_gravity, omega_spin)
 ```
 
-#### Low-Level API (Field)
+### Retrieval Extensions
+
+PMFlow includes specialized field implementations for semantic search:
 
 ```python
-from pmflow.core.pmflow import ParallelPMField
+from pmflow import (
+    QueryExpansionPMField,
+    SemanticNeighborhoodPMField,
+    HierarchicalRetrievalPMField,
+    CompositionalRetrievalPMField
+)
 
-# Enable Flow Field (Frame Dragging)
-pm = ParallelPMField(d_latent=64, enable_flow=True)
+# Query expansion for better search coverage
+expanded_field = QueryExpansionPMField(d_latent=64, n_centers=128)
 
-# Set Intent (Angular Momentum on Goal Concept)
-pm.omegas[target_index] = 2.0 
+# Semantic neighborhoods for related concept discovery
+neighbor_field = SemanticNeighborhoodPMField(d_latent=64, n_centers=128)
 
-# Get Full Reasoning Trajectory
-trajectory = pm(input_vector, return_trajectory=True)
-# Shape: (Batch, Steps+1, Dim)
+# Hierarchical retrieval for multi-level documents
+hierarchical = HierarchicalRetrievalPMField(
+    d_latent=64,
+    n_levels=3,
+    n_centers_per_level=64
+)
 
-# Measure "Mental Effort" (Path Length)
-effort = torch.sum(torch.norm(trajectory[:, 1:] - trajectory[:, :-1], dim=2), dim=1)
+# Compositional retrieval for complex queries
+compositional = CompositionalRetrievalPMField(
+    d_latent=64,
+    n_components=4
+)
 ```
 
-### Reactive Agentic Execution (v0.3.5)
-
-PMFlow v0.3.5 adds a step-by-step execution API for reactive planning systems.
-Instead of tracing full trajectories upfront, you can evolve position step-by-step
-and modify the gravitational field based on outcomes.
+### Contrastive Learning
 
 ```python
-from pmflow.core.pmflow import ParallelPMField
+from pmflow import ContrastivePMField, train_contrastive_pmfield
 
-pm = ParallelPMField(d_latent=64, enable_flow=True)
-z = initial_position  # Your starting latent position
+# Create field with contrastive loss
+field = ContrastivePMField(d_latent=64, n_centers=128, temperature=0.07)
 
-for step in range(max_steps):
-    # Single physics step
-    z_next = pm.step(z)
-    
-    # Ground to nearest action (your grounding logic)
-    indices, dists, attractions = pm.find_nearest_centers(z_next, top_k=3)
-    action = choose_action(indices[0])
-    
-    # Execute action and get result
-    result = execute_action(action)
-    
-    if result.failed:
-        # Mark this region as a hazard - trajectories will curve away
-        pm.mark_as_hazard(z_next, radius=1.0, repulsion_strength=-0.5)
-        # Also adjust specific center gravity
-        pm.adjust_gravity(center_idx, mu_delta=-0.3, omega_delta=0.0)
-    elif result.success:
-        # Mark as attractor - reinforce this path
-        pm.mark_as_attractor(z_next, radius=1.0, attraction_strength=0.3)
-    
-    # Apply external perturbation if needed
-    perturbation = encode_result_as_perturbation(result)
-    z = pm.inject_perturbation(z_next, perturbation, blend_factor=0.2)
-    
-    if goal_reached(z):
-        break
+# Prepare positive pairs
+positive_pairs = [
+    (torch.randn(1, 64), torch.randn(1, 64)),
+    (torch.randn(1, 64), torch.randn(1, 64)),
+]
+
+# Train with contrastive objectives
+for epoch in range(10):
+    for pair in positive_pairs:
+        loss = field.contrastive_loss(*pair)
+        loss.backward()
 ```
-
-**New Methods in ParallelPMField:**
-
-| Method | Description |
-|--------|-------------|
-| `step(z)` | Single physics step (vs full trajectory) |
-| `adjust_gravity(idx, mu_delta, omega_delta)` | Modify specific center |
-| `inject_perturbation(z, perturbation, blend)` | Apply external force |
-| `find_nearest_centers(z, top_k)` | Find closest gravitational centers |
-| `mark_as_hazard(z, radius, strength)` | Create repulsive region |
-| `mark_as_attractor(z, radius, strength)` | Create attractive region |
 
 ## Architecture
 
-PMFlow combines:
-- **Probabilistic Masking**: Learned attention over input tokens
-- **BioNN Layers**: 
-- **Flow-based Aggregation**: Smooth, differentiable token pooling
+PMFlow combines several key components:
+
+### Core Physics Engine
+- **Gravitational Field**: Particles (concepts/tokens) evolve through a field shaped by learned centers (attractors)
+- **Differential Equations**: Smooth dynamics based on general relativity analogy (`a = -c²∇ln(n)`)
+- **Frame-Dragging**: Optional angular momentum (omegas) enables goal-directed flow
+
+### Embedding Pipeline
+- **Probabilistic Masking**: Learned attention-like mechanism over input tokens
+- **Multi-Scale Architecture**: Hierarchical representations via fine and coarse gravitational fields
+- **BioNN Layers**: Biological neural network components for uncertainty estimation
+- **Context Blending**: RNN-like state mixing for sequence modeling
+
+### Language Model
+- **Token Evolution**: Each token evolves through the gravitational field across multiple steps
+- **Context Mixer**: Learned gating between current tokens and previous states
+- **Vocabulary Projection**: Output layer projects evolved states to next-token logits
+
+### Learning Components
 - **Contrastive Objectives**: Optional semantic similarity training
+- **Plasticity Rules**: Adaptive center/mass updates during learning
+- **Batch Processing**: Vectorized operations for GPU efficiency
 
 ## API Reference
 
-### `PMFlowEmbeddingEncoder`
+### High-Level: `PMFlowEmbeddingEncoder`
 
-Main encoder class.
+Primary encoder class for embeddings and agentic reasoning.
 
 **Parameters:**
-- `dimension` (int): Output embedding dimension
-- `latent_dim` (int): BioNN latent space dimension
-- `vocab_size` (int, optional): Vocabulary size for embedding layer
-- `use_contrastive` (bool): Enable contrastive learning
-- `temperature` (float): Temperature for contrastive loss
+- `dimension` (int): Output embedding dimension (default: 96)
+- `latent_dim` (int): Gravitational field latent dimension (default: 48)
+- `seed` (int): Random seed for determinism (default: 13)
+- `combine_mode` (str): "concat" or "pm-only" (default: "concat")
+- `device` (torch.device): GPU/CPU device (default: auto)
+- `target_pm_dim` (int, optional): Trim/pad field output to fixed size
+- `enable_flow` (bool): Enable frame-dragging physics for agentic reasoning (default: False)
 
 **Methods:**
-- `encode(tokens)`: Encode token sequence to embedding
-- `train_contrastive(pairs, epochs)`: Train with contrastive pairs
-- `save(path)`: Save model weights
-- `load(path)`: Load model weights
+- `encode(tokens) → Tensor`: Encode token sequence to embedding
+- `encode_with_components(tokens) → (Tensor, Tensor, Tensor)`: Get embedding plus latent and raw outputs
+- `trace_trajectory(tokens, steps=None) → (Tensor, dict)`: Trace reasoning path through space
+- `inject_intent(goal_tokens, strength=0.5, decay_radius=2.0) → int`: Bias toward goal concept
+- `clear_intent() → None`: Reset frame-dragging effects
+- `get_nearby_centers(tokens, topk=5) → list`: Find nearest gravitational centers
+- `save_state(path)`: Persist PMField parameters
+- `load_state(path)`: Load PMField parameters
 
-## Research Components
+### Language Model: `PMFlowLanguageModel`
 
-For researchers, low-level components are available:
+Sequence modeling via gravitational dynamics (requires training).
+
+**Parameters:**
+- `vocab_size` (int): Vocabulary size
+- `embedding_dim` (int): Token embedding dimension (default: 128)
+- `latent_dim` (int): Gravitational field latent dimension (default: 64)
+- `n_centers` (int): Number of gravitational attractors (default: 64)
+- `steps_per_token` (int): Evolution steps per token (default: 4)
+- `dt` (float): Time step for integration (default: 0.15)
+- `beta` (float): Gravitational acceleration scaling (default: 1.2)
+- `clamp` (float): Gradient clipping value (default: 3.0)
+- `enable_flow` (bool): Enable frame-dragging intent (default: True)
+- `dropout` (float): Dropout rate (default: 0.1)
+
+**Methods:**
+- `forward(token_ids) → Tensor`: Get next-token logits
+- `generate(prompt_ids, max_new_tokens, temperature, top_k, top_p) → List`: Generate sequence
+- `get_field_centers() → Tensor`: Get gravitational center positions
+- `get_field_masses() → Tensor`: Get center gravitational masses
+- `get_field_intents() → Tensor`: Get center angular momenta (omega)
+
+### Low-Level: Core Fields
+
+For research and advanced use cases:
 
 ```python
-from pmflow.core.pmflow import ParallelPMField
-from pmflow.bnn.bnn import TemporalPipelineBNN
-from pmflow.core.retrieval import QueryExpansionPMField
+from pmflow.core.pmflow import (
+    ParallelPMField,           # Single-scale gravitational field
+    MultiScalePMField,         # Hierarchical multi-scale field
+    VectorizedLateralEI,       # Lateral excitation/inhibition
+)
 ```
 
-See `docs/` for detailed component documentation.
+**ParallelPMField Methods:**
+- `forward(z, return_trajectory=False)`: Evolve latent through field
+- `step(z)`: Single physics step
+- `adjust_gravity(idx, mu_delta, omega_delta)`: Modify specific center
+- `inject_perturbation(z, perturbation, blend_factor)`: Apply external force
+- `find_nearest_centers(z, top_k)`: Find closest attractors
+- `mark_as_hazard(z, radius, strength)`: Create repulsive region
+- `mark_as_attractor(z, radius, strength)`: Create attractive region
+
+### Extensions: Retrieval & Contrastive
+
+```python
+from pmflow import (
+    QueryExpansionPMField,          # Expand queries for coverage
+    SemanticNeighborhoodPMField,    # Find related concepts
+    HierarchicalRetrievalPMField,   # Multi-level document retrieval
+    AttentionWeightedRetrieval,     # Attention-weighted field
+    CompositionalRetrievalPMField,  # Combine multiple retrieval strategies
+    ContrastivePMField,             # Semantic similarity training
+)
+```
+
+## Examples
+
+### Simple Embedding Usage
+
+```python
+from pmflow import PMFlowEmbeddingEncoder
+
+encoder = PMFlowEmbeddingEncoder(dimension=128, latent_dim=64)
+
+# Single text
+emb1 = encoder.encode(["hello", "world"])
+
+# Multiple texts with components
+texts = [
+    ["cat", "sits"],
+    ["dog", "runs"],
+    ["bird", "flies"]
+]
+
+for text in texts:
+    emb, latent, raw = encoder.encode_with_components(text)
+    print(f"Embedding shape: {emb.shape}")
+```
+
+### Language Model Training
+
+See `examples/train_pmflow_lm.py` for full training example.
+
+```python
+import torch
+from pmflow.lm import PMFlowLanguageModel
+from torch.optim import AdamW
+
+model = PMFlowLanguageModel(
+    vocab_size=1000,
+    embedding_dim=128,
+    latent_dim=64,
+    n_centers=32
+)
+
+optimizer = AdamW(model.parameters(), lr=1e-3)
+
+# Training loop
+for epoch in range(num_epochs):
+    for batch_ids in data_loader:
+        logits = model(batch_ids)
+        loss = F.cross_entropy(
+            logits[:, :-1].reshape(-1, 1000),
+            batch_ids[:, 1:].reshape(-1)
+        )
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+
+# Generate
+generated = model.generate(
+    prompt_ids=[1, 2, 3],
+    max_new_tokens=50,
+    temperature=0.8
+)
+```
+
+### Agentic Physics Demonstration
+
+See `examples/demo_agentic_physics.py` for interactive reasoning examples.
+
+```python
+from pmflow import PMFlowEmbeddingEncoder
+
+encoder = PMFlowEmbeddingEncoder(
+    dimension=96,
+    latent_dim=48,
+    enable_flow=True
+)
+
+# Reasoning trajectory
+trajectory, metrics = encoder.trace_trajectory(["problem", "solving"])
+print(f"Path length (effort): {metrics['path_length']:.3f}")
+print(f"Efficiency (confidence): {metrics['efficiency']:.3f}")
+
+# Goal-directed bias
+encoder.inject_intent(["creative", "solution"], strength=0.7)
+trajectory2, metrics2 = encoder.trace_trajectory(["problem", "solving"])
+
+# Debug: what centers influence this query?
+centers = encoder.get_nearby_centers(["problem", "solving"], topk=10)
+for idx, dist, mu, omega in centers:
+    print(f"Center {idx}: dist={dist:.3f}, mass={mu:.3f}, spin={omega:.4f}")
+```
+
+## Physics Model
+
+PMFlow is grounded in differential equations inspired by general relativity:
+
+### Gravitational Acceleration
+```
+a = -c² ∇ln(n)
+```
+
+Where the refractive index field is defined by learned gravitational centers:
+```
+n(r) = 1 + Σᵢ μᵢ / |r - rᵢ|²
+```
+
+- **rᵢ**: Position of gravitational center (learned attractor)
+- **μᵢ**: Mass of center (strength of attraction)
+- **∇ln(n)**: Gradient points toward stronger attractors
+- Particles (concepts/tokens) follow geodesics through this semantic landscape
+
+### Frame-Dragging (Agentic Flow)
+```
+u_g(r) = Σᵢ Ωᵢ × (r - rᵢ)
+```
+
+Optional angular momentum on centers creates:
+- Vortex-like flow patterns around attractors
+- Non-obvious concept transition paths
+- Goal-directed semantic evolution
+- Intent-driven reasoning (vs. passive retrieval)
+
+For complete mathematical formulation, see `all_formulas_fixed.tex` and `PMFLOW_LM_IMPLEMENTATION.txt`.
 
 ## Requirements
 
@@ -244,6 +421,20 @@ MIT License - see LICENSE file for details.
 Contributions welcome! See CONTRIBUTING.md for guidelines.
 
 ## Changelog
+
+### v0.3.5 (2026-02-15)
+- **Language Model Integration**: Full `PMFlowLanguageModel` for sequence modeling via gravitational dynamics
+  - ContextMixer for learned state blending
+  - Generation API with temperature and top-k sampling
+  - Training examples in `examples/train_pmflow_lm.py`
+- **Reactive Agentic Execution**:
+  - `ParallelPMField.step()` for single-step evolution
+  - `ParallelPMField.adjust_gravity()` for dynamic center modification
+  - `ParallelPMField.inject_perturbation()` for external force injection
+  - `ParallelPMField.find_nearest_centers()` for grounding
+  - `ParallelPMField.mark_as_hazard()` for obstacle avoidance
+  - `ParallelPMField.mark_as_attractor()` for goal reinforcement
+- **Bug Fixes**: Fixed duplicate function definitions and test suite alignment
 
 ### v0.3.4 (2026-02-01)
 - **Agentic Physics Encoder API**:
