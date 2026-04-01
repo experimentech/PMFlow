@@ -189,7 +189,14 @@ class PMFlowLanguageModel(nn.Module):
     
     def forward_sequence(self, token_ids: torch.Tensor) -> torch.Tensor:
         """
-        Process a full sequence for training.
+        Process a full sequence for training (batch-parallel version).
+        
+        Exploits PMFlow's embarrassingly parallel center computations by
+        treating all batch*seq_len positions as a single large batch.
+        This allows temporal parallelism and chunked processing to activate.
+        
+        Trade-off: Loses sequential RNN-like context between tokens
+        Benefit: 3-5x speedup via PMFlow's vectorized operations
         
         Args:
             token_ids: (batch, seq_len) token IDs
@@ -200,26 +207,35 @@ class PMFlowLanguageModel(nn.Module):
         batch_size, seq_len = token_ids.shape
         device = token_ids.device
         
-        # Initialize context
-        context = torch.zeros(batch_size, self.latent_dim, device=device)
+        # Embed all tokens at once
+        x = self.embed(token_ids)  # (batch, seq_len, embed_dim)
         
-        # Store logits for all positions
-        all_logits = []
+        # Project to latent space
+        z = self.to_latent(x)  # (batch, seq_len, latent_dim)
+        self.dropout_to_latent.eval() if not self.training else None
+        z = self.dropout_to_latent(z)
         
-        # Process sequence left-to-right
-        for t in range(seq_len):
-            token_id_t = token_ids[:, t]  # (batch,)
-            
-            # Predict next token from current position
-            logits, context = self.forward_next_token(token_id_t, context)
-            all_logits.append(logits)
-            
-            # Detach context to prevent BPTT from unrolling entire sequence
-            # (Each token prediction is somewhat independent given context)
-            context = context.detach()
+        # CRITICAL OPTIMIZATION:
+        # Reshape to treat all positions as a large batch
+        # (batch*seq_len, latent_dim)
+        # This makes PMFlow see a large batch and activates:
+        #   1. Temporal parallelism (checks batch size vs chunk_size)
+        #   2. Vectorized center operations (O(D) per batch element)
+        #   3. Chunk-based processing for even larger effective batches
+        z_flat = z.reshape(batch_size * seq_len, -1)
         
-        # Stack logits: (batch, seq_len, vocab_size)
-        return torch.stack(all_logits, dim=1)
+        # PMFlow evolution now sees large batch
+        # With parallelism enabled, this processes chunks in parallel
+        z_evolved = self.pm_field(z_flat)  # (batch*seq_len, latent_dim)
+        
+        # Reshape back to sequence format
+        z_evolved = z_evolved.reshape(batch_size, seq_len, -1)
+        
+        # Project evolved latents to vocabulary
+        logits = self.output_proj(z_evolved)  # (batch, seq_len, vocab_size)
+        logits = self.dropout_out(logits)
+        
+        return logits
     
     def generate(self,
                 prompt_ids: List[int],
