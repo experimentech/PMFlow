@@ -1,81 +1,80 @@
-# PMFlow Package - Current State
+# PMFlow Status
 
-## ⚠️ Important Note
+Last updated: 2026-04-02
+Current version: `0.3.5`
 
-This package currently contains the **low-level PMFlow research components**, NOT the production `PMFlowEmbeddingEncoder` used in Lilith.
+PMFlow is an active, installable package that includes both high-level APIs and
+low-level research components.
 
-### What's Here (Research Code)
+## Current State
 
-- **pmflow/core/pmflow.py**: Low-level PMField components
-  - `ParallelPMField` 
-  - `VectorizedLateralEI`
-  - `MultiScalePMField`
-  - `AttentionGatedPMField`
-  - `EnergyBasedPMField`
+- Package import and exports are aligned with current implementation.
+- `PMFlowEmbeddingEncoder` is available in-package and exported from `pmflow`.
+- `PMFlowLanguageModel` is available under `pmflow.lm` for sequence modeling and generation.
+- Agentic physics features (flow/intents, trajectory tracing, runtime field control)
+  are implemented and documented.
 
-- **pmflow/core/retrieval.py**: Retrieval-specific PMFields
-  - `QueryExpansionPMField`
-  - `SemanticNeighborhoodPMField`
-  - `HierarchicalRetrievalPMField`
-  - `AttentionWeightedRetrieval`
-  - `CompositionalRetrievalPMField`
+## Included Components
 
-- **pmflow/core/contrastive.py**: Contrastive learning
-  - `ContrastivePMField`
+### High-Level API
 
-- **pmflow/bnn/bnn.py**: BioNN temporal layers
-  - `TemporalPipelineBNN`
-  - `MultiGPUPMBNN`
-  - `PMBNNAlwaysPlasticV2`
+- `PMFlowEmbeddingEncoder`
+  - Deterministic hashed base encoder + PMFlow latent refinement
+  - Multi-scale field support
+  - Optional flow mode for trajectory and intent-driven behavior
+  - Save/load field state
 
-### What's Missing
+### Language Modeling
 
-The production-ready **`PMFlowEmbeddingEncoder`** that Lilith uses is located in:
-```
-experiments/retrieval_sanity/pipeline/embedding.py
-```
+- `PMFlowLanguageModel`
+  - Autoregressive generation via gravitational field evolution
+  - Context mixing and PMFlow field dynamics
+  - Configurable decoding (`temperature`, `top_k`, `top_p`)
 
-This is the actual working encoder with:
-- Simple, clean API
-- BioNN integration
-- Contrastive learning support
-- Production-tested
+### Core Physics
 
-## TODO: Consolidation Needed
+- `ParallelPMField`
+- `MultiScalePMField`
+- `VectorizedLateralEI`
+- Plasticity helpers (`vectorized_pm_plasticity`, `contrastive_plasticity`,
+  `batch_plasticity_update`)
 
-To make this a proper pip package, we need to:
+### Retrieval Extensions
 
-1. **Copy the working `PMFlowEmbeddingEncoder`** from experiments to pmflow/
-2. **Create a clean, simple API** that exposes:
-   ```python
-   from pmflow import PMFlowEncoder
-   
-   encoder = PMFlowEncoder(dimension=64, latent_dim=32)
-   embedding = encoder.encode(tokens)
-   ```
+- `QueryExpansionPMField`
+- `SemanticNeighborhoodPMField`
+- `HierarchicalRetrievalPMField`
+- `AttentionWeightedRetrieval`
+- `CompositionalRetrievalPMField`
 
-3. **Decide what to do with research code**:
-   - Option A: Keep in `pmflow.research` submodule
-   - Option B: Separate repo for research code
-   - Option C: Archive it
+### Contrastive Extensions
 
-4. **Write proper tests** for the production API
+- `ContrastivePMField`
+- `contrastive_learning_step`
+- `train_contrastive_pmfield`
+- `create_contrastive_encoder`
 
-5. **Update README** with real usage examples
+### Experimental BioNN
 
-## Quick Test
+- `TemporalPipelineBNN`
 
-To verify the package structure:
+## Notes on Documentation
+
+- `README.md` reflects the current package direction and capabilities.
+- `STRUCTURE.md` is currently empty and does not define current architecture.
+- This status document supersedes older notes that described PMFlow as
+  research-only or missing the production encoder.
+
+## Validation Quick Check
+
 ```bash
-cd pmflow-package
 python -c "import pmflow; print(pmflow.__version__)"
+python -c "from pmflow import PMFlowEmbeddingEncoder; print('ok')"
+python -c "from pmflow.lm import PMFlowLanguageModel; print('ok')"
 ```
 
-To see what's actually available:
-```bash
-python -c "import pmflow; print(dir(pmflow))"
-```
+## Near-Term Maintenance
 
-## Next Steps
-
-See `STRUCTURE.md` for the proposed clean architecture.
+1. Keep STATUS/README/API exports synchronized per release.
+2. Add/expand tests for LM generation and flow-intent utilities.
+3. Populate `STRUCTURE.md` or remove it to avoid stale references.
