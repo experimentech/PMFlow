@@ -7,6 +7,7 @@ A physics-inspired neural architecture combining gravitational particle dynamics
 - **Gravitational Particle Dynamics**: Token/concept evolution through learned semantic attractor fields
 - **BioNN-Enhanced Embeddings**: Biological Neural Network layers for uncertainty-aware representations
 - **Language Modeling**: Full sequence modeling via gravitational field evolution (v0.3.5+)
+- **Cognitive Architecture**: High-level framework for building reasoning agents (v0.3.6+)
 - **Agentic Physics**: Frame-dragging flow fields and trajectory tracking for intent-driven reasoning
 - **Advanced Retrieval**: Query expansion, semantic neighborhoods, hierarchical retrieval
 - **Contrastive Learning**: Optional contrastive training for semantic similarity
@@ -75,6 +76,44 @@ generated = model.generate(
 ```
 
 ## Advanced Usage
+
+### Cognitive Architecture (v0.3.6+)
+
+PMFlow includes a complete cognitive architecture framework for building reasoning agents:
+
+```python
+from pmflow import PMFlowEmbeddingEncoder, CognitiveAgent, ReasoningMode
+
+# Create cognitive agent
+encoder = PMFlowEmbeddingEncoder(dimension=96, enable_flow=True)
+agent = CognitiveAgent(
+    encoder=encoder,
+    memory_capacity=10,
+    enable_metacognition=True
+)
+
+# Set a goal
+agent.set_goal(["neural", "networks"], strength=0.7)
+
+# Reason about something
+result, trace = agent.think(
+    ["machine", "learning"],
+    mode=ReasoningMode.GOAL_DIRECTED
+)
+
+# Get explanation
+print(agent.explain_reasoning(trace))
+# Shows: reasoning mode, path length, efficiency, concepts visited
+```
+
+**Features:**
+- **Multiple Reasoning Modes**: Direct, iterative, goal-directed, exploratory
+- **Working Memory**: Short-term context with relevance decay
+- **Metacognition**: Monitor reasoning for issues (stuck, inefficient, high effort)
+- **Explainability**: Human-readable traces of reasoning processes
+- **Goal Management**: Set goals dynamically to bias reasoning
+
+See `docs/cognitive_architecture.md` for complete guide.
 
 ### Agentic Reasoning with Flow Fields
 
@@ -421,6 +460,16 @@ MIT License - see LICENSE file for details.
 Contributions welcome! See CONTRIBUTING.md for guidelines.
 
 ## Changelog
+
+### v0.3.6 (2026-04-02)
+- **Cognitive Architecture Framework**: Complete high-level agent system
+  - `CognitiveAgent` with perception, memory, reasoning, metacognition
+  - `WorkingMemory` for short-term context management
+  - `MetacognitiveMonitor` for reasoning process analysis
+  - Multiple reasoning modes (direct, iterative, goal-directed, exploratory)
+  - Explainable reasoning traces with human-readable explanations
+  - Example: `examples/cognitive_agent_demo.py`
+  - Documentation: `docs/cognitive_architecture.md`
 
 ### v0.3.5 (2026-02-15)
 - **Language Model Integration**: Full `PMFlowLanguageModel` for sequence modeling via gravitational dynamics

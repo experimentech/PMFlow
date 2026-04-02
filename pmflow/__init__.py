@@ -1,7 +1,14 @@
 """
 PMFlow - Probabilistic Masked Flow for Neural Embeddings
 
-Core library plus retrieval and contrastive extensions.
+Core library plus retrieval, contrastive, and cognitive architecture extensions.
+
+v0.3.6: Cognitive Architecture Framework
+  - CognitiveAgent - high-level compositional agent
+  - WorkingMemory - short-term context management
+  - MetacognitiveMonitor - reasoning process analysis
+  - Multiple reasoning modes (direct, iterative, goal-directed, exploratory)
+  - Explainable reasoning traces
 
 v0.3.5: Agentic Execution API for reactive planning
   - ParallelPMField.step() - single-step evolution for reactive execution
@@ -20,7 +27,7 @@ v0.3.4: Added Agentic Physics API
   - enable_flow parameter for physics-based reasoning
 """
 
-__version__ = "0.3.5"
+__version__ = "0.3.6"
 
 # Primary encoder
 from pmflow.encoder import PMFlowEmbeddingEncoder
@@ -56,6 +63,16 @@ from pmflow.core.contrastive import (
 # Experimental BioNN components
 from pmflow.bnn.bnn import TemporalPipelineBNN
 
+# Cognitive architecture
+from pmflow.cognitive import (
+    CognitiveAgent,
+    WorkingMemory,
+    MetacognitiveMonitor,
+    ReasoningMode,
+    ReasoningTrace,
+    MemoryItem,
+)
+
 __all__ = [
     # Primary API
     "PMFlowEmbeddingEncoder",
@@ -78,6 +95,13 @@ __all__ = [
     "contrastive_learning_step",
     "train_contrastive_pmfield",
     "create_contrastive_encoder",
+    # Cognitive Architecture
+    "CognitiveAgent",
+    "WorkingMemory",
+    "MetacognitiveMonitor",
+    "ReasoningMode",
+    "ReasoningTrace",
+    "MemoryItem",
     # Experimental
     "TemporalPipelineBNN",
 ]
