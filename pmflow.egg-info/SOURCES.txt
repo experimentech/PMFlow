@@ -6,8 +6,10 @@ STRUCTURE.md
 all_formulas_fixed.pdf
 all_formulas_fixed.tex
 pyproject.toml
+docs/PMFLOW_LM.md
 examples/demo_agentic_physics.py
 examples/simple_example.py
+examples/train_pmflow_lm.py
 pmflow/__init__.py
 pmflow/encoder.py
 pmflow/pmflow.py
@@ -18,6 +20,7 @@ pmflow.egg-info/requires.txt
 pmflow.egg-info/top_level.txt
 pmflow/__pycache__/__init__.cpython-313.pyc
 pmflow/__pycache__/encoder.cpython-313.pyc
+pmflow/__pycache__/pmflow.cpython-313.pyc
 pmflow/bnn/__init__.py
 pmflow/bnn/bnn.py
 pmflow/bnn/__pycache__/__init__.cpython-313.pyc
@@ -30,6 +33,12 @@ pmflow/core/__pycache__/__init__.cpython-313.pyc
 pmflow/core/__pycache__/contrastive.cpython-313.pyc
 pmflow/core/__pycache__/pmflow.cpython-313.pyc
 pmflow/core/__pycache__/retrieval.cpython-313.pyc
+pmflow/lm/__init__.py
+pmflow/lm/pmflow_lm.py
+pmflow/lm/train.py
+pmflow/lm/__pycache__/__init__.cpython-313.pyc
+pmflow/lm/__pycache__/pmflow_lm.cpython-313.pyc
+pmflow/lm/__pycache__/train.cpython-313.pyc
 pmflow/utils/__init__.py
 pmflow/utils/baselines.py
 pmflow/utils/evaluation.py
@@ -39,4 +48,7 @@ tests/test_basic.py
 tests/test_encoder.py
 tests/test_flow_physics.py
 tests/__pycache__/test_basic.cpython-313-pytest-8.3.5.pyc
+tests/__pycache__/test_basic.cpython-313-pytest-9.0.1.pyc
 tests/__pycache__/test_encoder.cpython-313-pytest-8.3.5.pyc
+tests/__pycache__/test_encoder.cpython-313-pytest-9.0.1.pyc
+tests/__pycache__/test_flow_physics.cpython-313-pytest-9.0.1.pyc
